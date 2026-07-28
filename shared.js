@@ -1,6 +1,6 @@
 /**
- * TTF Deck Builder - Shared Module
- * Configuration, data loading, card rendering, and utilities used by both pages.
+ * TTF Companion - Shared Module
+ * Configuration, data loading, card rendering, and utilities.
  */
 
 // ============================================================

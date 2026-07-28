@@ -45,31 +45,6 @@ header h1 {
   margin-left: auto;
 }
 
-#draft-link {
-  font-size: 0.8rem;
-  color: #2255cc;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid #2255cc;
-  border-radius: 4px;
-}
-
-#draft-link:hover {
-  background: #2255cc;
-  color: #fff;
-}
-
-body.dark #draft-link {
-  color: #4a90d9;
-  border-color: #4a90d9;
-}
-
-body.dark #draft-link:hover {
-  background: #4a90d9;
-  color: #fff;
-}
-
 #back-btn {
   background: #2255cc;
   color: #fff;

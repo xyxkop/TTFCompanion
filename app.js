@@ -1,7 +1,7 @@
 /**
- * TTF Deck Builder
- * A lightweight card browser for the TTF mobile game.
- * Loads card data from a public Google Sheet and provides filtering/sorting.
+ * TTF Companion
+ * A lightweight companion tool for the Topps Total Football mobile game.
+ * Card browser, deck builder, and more.
  */
 (function () {
   'use strict';
@@ -12,6 +12,14 @@
 
   const SHEET_CSV_URL =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vRnVPbikUcch1oZ7IFsKqH4K0kDHy6cHQuET5lHZrGrCTCXfWKiWSq-F5l4YXpXf2dNrqVZSjxFnWSr/pub?gid=0&single=true&output=csv';
+
+  // Sets metadata sheet (second tab) - update gid to match your sheet
+  const SETS_CSV_URL =
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vRnVPbikUcch1oZ7IFsKqH4K0kDHy6cHQuET5lHZrGrCTCXfWKiWSq-F5l4YXpXf2dNrqVZSjxFnWSr/pub?gid=SET_CONFIG_GID&single=true&output=csv';
+
+  // Set config loaded from the sets metadata sheet
+  // { setName: { bg, text, cardNumberColor, parallelType, digitalParallelCards: Set } }
+  let setConfigs = {};
 
   /** Special cards that are pre-made parallels in the spreadsheet */
   const SPECIAL_PARALLELS = {
@@ -28,6 +36,42 @@
     Strength: 'icons/strength.png',
     Leadership: 'icons/leadership.png',
   };
+
+  // Color palette - color names map to hex values
+  // Use these names in the Google Sheet instead of raw hex codes
+  const COLOR_PALETTE = {
+    'white': '#ffffff',
+    'black': '#000000',
+    'dark-grey': '#444444',
+    'grey': '#999999',
+    'red': '#cc0000',
+    'orange': '#ee7700',
+    'pink': '#ff77aa',
+    'navy': '#1a1a4e',
+    'blue': '#2255cc',
+    'light-blue': '#aaccee',
+    'ice-blue': '#e8f0ff',
+    'cyan': '#00cccc',
+    'teal': '#33ccaa',
+    'purple': '#7700aa',
+    'green': '#228833',
+    'light-green': '#aaffaa',
+    'yellow': '#ffdd00',
+    'gold': '#cc9900',
+    'light-yellow': '#fffde6',
+    'beige': '#f5eedc',
+    'brown': '#553322',
+    'magenta': '#cc00cc',
+    'lime': '#33cc33',
+    'lavender': '#e0d8ee',
+  };
+
+  /** Resolve a color name or hex value to hex */
+  function resolveColor(value) {
+    if (!value) return null;
+    if (value.startsWith('#')) return value;
+    return COLOR_PALETTE[value.toLowerCase()] || value;
+  }
 
   const SET_COLORS = {
     'Base': { bg: '#ffffff', text: '#000000' },
@@ -81,56 +125,8 @@
   const POSITION_LABELS = { Goalkeeper: 'GK', Defender: 'DEF', Midfielder: 'MID', Forward: 'FWD' };
 
   const SET_BACKGROUNDS = {
-    '30th Anniversary': 'backgrounds/30th_anniversary.jpg',
     'Aeternus': 'backgrounds/aeternus.jpg',
-    'Baroque': 'backgrounds/baroque.jpg',
-    'Base_UCC': 'backgrounds/base.jpg',
-    'Base_MLS': 'backgrounds/base.jpg',
-    'Base_PL': 'backgrounds/base_pl.jpg',
-    'Birthday': 'backgrounds/birthday.jpg',
-    'Box Office': 'backgrounds/box_office.jpg',
-    'Chromium Base_UCC': 'backgrounds/chromium_base_ucc.jpg',
-    'Chromium Base_PL': 'backgrounds/chromium_base_pl.jpg',
-    'Clarity': 'backgrounds/clarity.jpg',
-    'Classic': 'backgrounds/classic.jpg',
-    "Collector's Reserve": 'backgrounds/collector.jpg',
-    'Darkness': 'backgrounds/darkness.jpg',
-    'Encrypted': 'backgrounds/encrypted.jpg',
     'Eternal Gold': 'backgrounds/eternal_gold.jpg',
-    'Festive': 'backgrounds/festival.jpg',
-    'First Class': 'backgrounds/first_class.jpg',
-    'Fusion': 'backgrounds/fusion.jpg',
-    'Gallery': 'backgrounds/gallery.jpg',
-    'Glow': 'backgrounds/glow.jpg',
-    'Greatest Show': 'backgrounds/greatest_show.jpg',
-    'Halloween_PL': 'backgrounds/halloween_pl.jpg',
-    'Halloween_UCC': 'backgrounds/halloween_ucc.jpg',
-    "He's Him": 'backgrounds/hes_him.jpg',
-    'Iconic Numbers': 'backgrounds/iconic_numbers.jpg',
-    'Inferno': 'backgrounds/inferno.jpg',
-    'Legacy': 'backgrounds/legacy.jpg',
-    'Legends': 'backgrounds/legend.jpg',
-    'Limited Edition': 'backgrounds/limited_edition.jpg',
-    'Master Magicians': 'backgrounds/master_magicians.jpg',
-    'Neon Noir': 'backgrounds/neon_noir.jpg',
-    'New Year': 'backgrounds/new_year.jpg',
-    'Next Goal Wins': 'backgrounds/next_goal_wins.jpg',
-    'One to Watch': 'backgrounds/ones_to_watch.jpg',
-    'Pitch to Dugout': 'backgrounds/pitch_to_dugout.jpg',
-    'Pro Pass': 'backgrounds/propass.jpg',
-    'Record Breakers': 'backgrounds/record_breakers.jpg',
-    'Reign Supreme': 'backgrounds/reign_supreme.jpg',
-    'Season Kick-off': 'backgrounds/season_kickoff.jpg',
-    'Shatterpoint': 'backgrounds/shatterpoint.jpg',
-    'Shockwave': 'backgrounds/shockwave.jpg',
-    'Standout': 'backgrounds/standout.jpg',
-    'Storm': 'backgrounds/storm.jpg',
-    'Team of the Season': 'backgrounds/team_of_the_season.jpg',
-    'Terraces': 'backgrounds/terraces.jpg',
-    'Titanium': 'backgrounds/titanium.jpg',
-    'Total Performers': 'backgrounds/total_performers.jpg',
-    'Vibrant Velocity': 'backgrounds/vibrant_velocity.jpg',
-    'White Ice': 'backgrounds/white_ice.jpg',
   };
 
   // ============================================================
@@ -300,6 +296,9 @@
     refreshBtn.disabled = true;
 
     try {
+      // Load sets config first
+      await loadSetsConfig();
+
       const response = await fetch(SHEET_CSV_URL + '&_t=' + Date.now());
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       parseCSV(await response.text());
@@ -309,6 +308,55 @@
       cardListEl.innerHTML = `<p class="placeholder">Failed to load card data: ${err.message}</p>`;
     } finally {
       refreshBtn.disabled = false;
+    }
+  }
+
+  async function loadSetsConfig() {
+    try {
+      const response = await fetch(SETS_CSV_URL + '&_t=' + Date.now());
+      if (!response.ok) return;
+      const text = await response.text();
+      parseSetsConfig(text);
+    } catch (err) {
+      console.warn('Failed to load sets config:', err);
+    }
+  }
+
+  function parseSetsConfig(text) {
+    const lines = parseCSVLines(text);
+    if (lines.length < 2) return;
+
+    const header = lines[0].map(col => col.trim());
+    setConfigs = {};
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i];
+      if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+
+      const entry = {};
+      for (let j = 0; j < header.length; j++) {
+        entry[header[j]] = (row[j] || '').trim();
+      }
+
+      const setName = entry['Set Name'];
+      if (!setName) continue;
+
+      const config = {
+        bg: resolveColor(entry['BG Color']) || '#ffffff',
+        text: resolveColor(entry['Text Color']) || '#000000',
+        cardNumberColor: resolveColor(entry['Card Number Color']) || '#555555',
+        parallelType: entry['Parallel Type'] || 'STANDARD',
+        digitalParallelCards: null,
+      };
+
+      // Only parse digital parallel cards for DIGITAL_PARTIAL
+      if (config.parallelType === 'DIGITAL_PARTIAL' && entry['Digital Parallel Cards']) {
+        config.digitalParallelCards = new Set(
+          entry['Digital Parallel Cards'].split(',').map(s => s.trim()).filter(Boolean)
+        );
+      }
+
+      setConfigs[setName] = config;
     }
   }
 
@@ -365,7 +413,7 @@
     const parallels = [];
 
     allCards.forEach(card => {
-      if (card['Parallels?'] !== 'Y') return;
+      if (!shouldGenerateParallels(card)) return;
       const isGK = card['Position'] === 'Goalkeeper';
 
       parallels.push(makeParallel(card, '\u03B1/\u03B1', isGK ? { shotblocking: 1 } : { Defence: 2 }));
@@ -377,14 +425,31 @@
 
     allCards = allCards.concat(parallels);
 
-    // Omega parallels (only from Base cards)
+    // Omega parallels (only from Base cards that should have parallels)
     const omegas = [];
     allCards.forEach(card => {
       if (card['Omega?'] !== 'Y' || card['Parallel'] !== 'Base') return;
+      if (!shouldGenerateParallels(card)) return;
       omegas.push(makeParallel(card, '\u03A9/\u03A9', { Attack: 2, Defence: 2, Skill: 2, Energy: -1 }));
     });
 
     allCards = allCards.concat(omegas);
+  }
+
+  /** Determine if a card should have parallels based on set config */
+  function shouldGenerateParallels(card) {
+    if (card['Parallels?'] !== 'Y') return false;
+
+    const setName = card['Set'];
+    const config = setConfigs[setName];
+    if (!config) return true; // No config = default to using Parallels? flag
+
+    if (config.parallelType === 'NO_DIGITAL') return false;
+    if (config.parallelType === 'DIGITAL_PARTIAL') {
+      return config.digitalParallelCards && config.digitalParallelCards.has(card['Card #']);
+    }
+    // STANDARD - use Parallels? flag (already checked above)
+    return true;
   }
 
   /** Create a parallel variant of a card with the given stat modifications */
@@ -1124,11 +1189,7 @@
 
     // Set background image if available
     const cardSetName = card['Set'] || '';
-    let bgKey = cardSetName;
-    if (cardSetName === 'Halloween') bgKey = card['License'] === 'PL' ? 'Halloween_PL' : 'Halloween_UCC';
-    if (cardSetName === 'Base') bgKey = card['License'] === 'PL' ? 'Base_PL' : (card['License'] === 'MLS' ? 'Base_MLS' : 'Base_UCC');
-    if (cardSetName === 'Chromium Base') bgKey = card['License'] === 'PL' ? 'Chromium Base_PL' : 'Chromium Base_UCC';
-    const bgImage = SET_BACKGROUNDS[bgKey];
+    const bgImage = SET_BACKGROUNDS[cardSetName];
     if (bgImage) {
       div.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url(${bgImage})`;
       div.style.backgroundSize = 'cover';
@@ -1479,11 +1540,7 @@
       if (setColor) {
         row.style.borderLeft = `4px solid ${setColor.bg}`;
       }
-      let deckBgKey = setName;
-      if (setName === 'Halloween') deckBgKey = card['License'] === 'PL' ? 'Halloween_PL' : 'Halloween_UCC';
-      if (setName === 'Base') deckBgKey = card['License'] === 'PL' ? 'Base_PL' : (card['License'] === 'MLS' ? 'Base_MLS' : 'Base_UCC');
-      if (setName === 'Chromium Base') deckBgKey = card['License'] === 'PL' ? 'Chromium Base_PL' : 'Chromium Base_UCC';
-      const bgImage = SET_BACKGROUNDS[deckBgKey];
+      const bgImage = SET_BACKGROUNDS[setName];
       if (bgImage) {
         row.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url(${bgImage})`;
         row.style.backgroundSize = 'cover';
