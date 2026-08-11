@@ -1,0 +1,64 @@
+/* TTF Companion - Firebase Auth Styles */
+
+#auth-container {
+  display: flex;
+  align-items: center;
+}
+
+.auth-signed-in {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.auth-name {
+  font-size: 0.75rem;
+  color: #555;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.auth-btn:hover {
+  background: #f5f5f7;
+  border-color: #bbb;
+}
+
+.auth-btn-in {
+  font-weight: 600;
+}
+
+.auth-btn-out {
+  font-size: 0.7rem;
+  color: #888;
+  border-color: #e0e0e0;
+}
+.auth-btn-out:hover {
+  color: #e94560;
+  border-color: #e94560;
+}
+
+.auth-google-icon {
+  flex-shrink: 0;
+}

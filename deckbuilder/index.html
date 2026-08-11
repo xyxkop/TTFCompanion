@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deck Builder - TTF Companion</title>
+  <link rel="stylesheet" href="../shared/shared.css">
+  <link rel="stylesheet" href="../shared/firebase.css">
+  <link rel="stylesheet" href="deckbuilder.css">
+</head>
+<body>
+  <header>
+    <h1><a href="../" style="color:inherit;text-decoration:none">TTF Companion</a> / Deck Builder</h1>
+    <div id="header-right">
+      <div id="auth-container"></div>
+    </div>
+  </header>
+
+  <main>
+    <aside id="filter-panel">
+      <div id="filter-panel-header">
+        <h2>Filters</h2>
+      </div>
+      <div id="filter-scroll">
+        <div id="filters-container"></div>
+      </div>
+      <div id="filter-actions">
+        <button id="clear-filters-btn">Clear All</button>
+      </div>
+    </aside>
+
+    <div id="center-panel">
+      <div id="rule-banner">
+        <span id="rule-banner-text">Rule: None</span>
+        <button id="rule-details-btn" class="pool-banner-btn hidden" title="View rule details">Details</button>
+        <div id="rule-kebab" class="pool-kebab">
+          <button id="rule-kebab-btn" class="pool-kebab-btn" title="Options">&#x22EE;</button>
+          <div id="rule-kebab-menu" class="pool-kebab-menu hidden"></div>
+        </div>
+      </div>
+      <div id="card-list-header">
+        <span id="card-count"></span>
+        <div id="click-through-bar" class="hidden">
+          <button id="ct-back-btn">&larr;</button>
+          <span id="ct-label"></span>
+        </div>
+        <div id="sort-controls">
+          <button id="sort-field-btn" title="Change sort">#</button>
+          <button id="sort-dir-btn" title="Toggle sort direction">↑</button>
+        </div>
+      </div>
+      <section id="card-list">
+        <p class="placeholder">Loading cards...</p>
+      </section>
+      <div id="deck-stats-panel">
+        <div id="deck-stats-header">
+          <h3>Deck Stats</h3>
+          <button id="deck-stats-toggle">▼</button>
+        </div>
+        <div id="deck-stats-content">
+          <div class="deck-chart" data-slot="0">
+            <div class="deck-chart-header">
+              <h4>Energy</h4>
+              <select class="chart-selector" data-slot="0">
+                <option value="energy">Energy</option>
+                <option value="skill-flip">Skill Flip</option>
+                <option value="skill-type">Skill Types</option>
+                <option value="attack">Attack</option>
+                <option value="defence">Defence</option>
+                <option value="position">Position</option>
+                <option value="player-stack">Player Stack</option>
+                <option value="set">Set</option>
+                <option value="club">Club</option>
+                <option value="ability">Ability</option>
+                <option value="parallels">Parallels</option>
+              </select>
+            </div>
+            <div class="bar-chart"></div>
+          </div>
+          <div class="deck-chart" data-slot="1">
+            <div class="deck-chart-header">
+              <h4>Skill Flip</h4>
+              <select class="chart-selector" data-slot="1">
+                <option value="energy">Energy</option>
+                <option value="skill-flip" selected>Skill Flip</option>
+                <option value="skill-type">Skill Types</option>
+                <option value="attack">Attack</option>
+                <option value="defence">Defence</option>
+                <option value="position">Position</option>
+                <option value="player-stack">Player Stack</option>
+                <option value="set">Set</option>
+                <option value="club">Club</option>
+                <option value="ability">Ability</option>
+                <option value="parallels">Parallels</option>
+              </select>
+            </div>
+            <div class="bar-chart"></div>
+          </div>
+          <div class="deck-chart" data-slot="2">
+            <div class="deck-chart-header">
+              <h4>Skill Types</h4>
+              <select class="chart-selector" data-slot="2">
+                <option value="energy">Energy</option>
+                <option value="skill-flip">Skill Flip</option>
+                <option value="skill-type" selected>Skill Types</option>
+                <option value="attack">Attack</option>
+                <option value="defence">Defence</option>
+                <option value="position">Position</option>
+                <option value="player-stack">Player Stack</option>
+                <option value="set">Set</option>
+                <option value="club">Club</option>
+                <option value="ability">Ability</option>
+                <option value="parallels">Parallels</option>
+              </select>
+            </div>
+            <div class="bar-chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside id="deck-panel">
+      <div id="deck-panel-header">
+        <button id="deck-collapse-btn" class="deck-collapse-btn" title="Hide deck panel">▶</button>
+        <h2>Deck</h2>
+        <span id="deck-count">0 / 20</span>
+        <button id="clear-deck-btn" title="Clear Deck">Clear</button>
+      </div>
+      <div id="deck-warnings"></div>
+      <div id="deck-list"></div>
+      <div id="deck-actions">
+        <button id="import-deck-btn">Import</button>
+        <button id="share-deck-btn">Share</button>
+        <button id="save-deck-btn" class="auth-only hidden">Save</button>
+        <button id="my-decks-btn" class="auth-only hidden">My Decks</button>
+      </div>
+    </aside>
+    <div id="deck-expand-strip" class="hidden" title="Show deck panel">&#9664;</div>
+  </main>
+
+  <footer id="disclaimer">
+    This is an unofficial fan-made tool. Topps Total Football and all related assets are property of Topps. Not affiliated with or endorsed by Topps.
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="../shared/shared.js"></script>
+  <script src="../shared/firebase.js"></script>
+  <script src="deckbuilder.js"></script>
+</body>
+</html>

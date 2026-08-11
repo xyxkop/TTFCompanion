@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection Tracker - TTF Companion</title>
+  <link rel="stylesheet" href="../shared/shared.css">
+  <link rel="stylesheet" href="../shared/firebase.css">
+  <link rel="stylesheet" href="collection.css">
+</head>
+<body>
+  <header>
+    <h1><a href="../" style="color:inherit;text-decoration:none">TTF Companion</a> / Collection Tracker</h1>
+    <div id="header-right">
+      <div id="auth-container"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth gate: shown when not signed in -->
+    <div id="auth-gate">
+      <p>Sign in to track your card collection.</p>
+    </div>
+
+    <!-- Collection list: shown when signed in but no collection selected -->
+    <div id="collections-view" class="hidden">
+      <h2>My Collections</h2>
+      <div id="collections-list"></div>
+      <button id="create-collection-btn">+ New Collection</button>
+    </div>
+
+    <!-- Collection editor: shown when a collection is open -->
+    <div id="collection-editor" class="hidden">
+      <div id="editor-header">
+        <button id="back-to-list-btn">&larr; Back</button>
+        <h2 id="collection-name"></h2>
+        <span id="collection-stats"></span>
+      </div>
+      <div id="editor-filters">
+        <div id="want-list-section">
+          <span class="want-list-label">My Wishlists:</span>
+          <select id="want-list-select"><option value="">None</option></select>
+          <button id="add-want-list-btn">New Wishlist...</button>
+          <button id="delete-want-list-btn" class="hidden">Delete Wishlist</button>
+        </div>
+        <div id="set-completion" class="hidden">
+          <div id="completion-desc"></div>
+          <div id="completion-progress">
+            <span id="completion-text"></span>
+            <div id="completion-bar"><div id="completion-fill"></div></div>
+          </div>
+        </div>
+        <div id="search-filters">
+          <input type="text" id="card-search" placeholder="Search player name...">
+          <select id="set-filter"><option value="">All Sets</option></select>
+          <label id="highlight-wishlist-toggle" class="hidden"><input type="checkbox" id="highlight-wishlist-cb" checked> Highlight wanted</label>
+          <button id="bulk-own-btn" title="Own all visible Base cards">Bulk Own Base</button>
+        </div>
+      </div>
+      <div id="card-list-header-row">
+        <span class="col-num">#</span>
+        <span class="col-set">Set</span>
+        <span class="col-name">Player</span>
+        <span class="col-club">Club</span>
+      </div>
+      <div id="card-rows"></div>
+    </div>
+  </main>
+
+  <footer id="disclaimer">
+    This is an unofficial fan-made tool. Not affiliated with or endorsed by Topps.
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="../shared/shared.js"></script>
+  <script src="../shared/firebase.js"></script>
+  <script src="collection.js"></script>
+</body>
+</html>

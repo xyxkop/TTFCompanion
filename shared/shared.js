@@ -1,85 +1,171 @@
 /**
  * TTF Companion - Shared Module
  * Configuration, data loading, card rendering, and utilities.
+ * All tool pages load this before their own script.
  */
 
 // ============================================================
 // CONFIGURATION
 // ============================================================
 
-const SHEET_CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRnVPbikUcch1oZ7IFsKqH4K0kDHy6cHQuET5lHZrGrCTCXfWKiWSq-F5l4YXpXf2dNrqVZSjxFnWSr/pub?gid=0&single=true&output=csv';
+const SPREADSHEET_BASE =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRFrS2boMIFndbJnIDUBFfHcZvD-20nwBM-bUky6tb8euQi6eYuih4lDemnLZ3PMIwFtcOlauV_JJuR/pub?single=true&output=csv';
 
-const SPECIAL_PARALLELS = {
-  '651-PA': { parallel: '\u03B1/\u03B1', set: 'Shatterpoint', cardNum: '651' },
-  '651-PO': { parallel: '\u03A9/\u03A9', set: 'Shatterpoint', cardNum: '651' },
-  '686-PA': { parallel: '\u03B1/\u03B1', set: 'Storm', cardNum: '686' },
-  '686-PO': { parallel: '\u03A9/\u03A9', set: 'Storm', cardNum: '686' },
-};
+const SHEET_CSV_URL = SPREADSHEET_BASE + '&gid=1154431008';   // Cards tab
+const SETS_CSV_URL = SPREADSHEET_BASE + '&gid=0';             // Set metadata tab
+
+// Set config loaded from the sets metadata sheet
+let setConfigs = {};
 
 const SKILL_TYPE_ICONS = {
-  Speed: 'icons/speed.png',
-  Accuracy: 'icons/accuracy.png',
-  Control: 'icons/control.png',
-  Strength: 'icons/strength.png',
-  Leadership: 'icons/leadership.png',
+  Speed: '../assets/icons/speed.png',
+  Accuracy: '../assets/icons/accuracy.png',
+  Control: '../assets/icons/control.png',
+  Strength: '../assets/icons/strength.png',
+  Leadership: '../assets/icons/leadership.png',
 };
 
 const POSITION_LABELS = {
   Goalkeeper: 'GK', Defender: 'DEF', Midfielder: 'MID', Forward: 'FWD',
 };
 
-const SET_COLORS = {
-  'Base': { bg: '#ffffff', text: '#000000' },
-  'Fusion': { bg: '#cc0000', text: '#ffffff' },
-  'Pro Pass': { bg: '#444444', text: '#ffffff' },
-  'Season Kick-off': { bg: '#2255cc', text: '#ffffff' },
-  'Vibrant Velocity': { bg: '#111111', text: '#33cc33' },
-  'One to Watch': { bg: '#00cccc', text: '#7700aa' },
-  'Shatterpoint': { bg: '#999999', text: '#000000' },
-  'Total Performers': { bg: '#aaccee', text: '#000000' },
-  'Legends': { bg: '#ffffff', text: '#996600' },
-  "Collector's Reserve": { bg: '#1a1a4e', text: '#ffffff' },
-  'Greatest Show': { bg: '#cc0000', text: '#ffdd00' },
-  'Storm': { bg: '#999999', text: '#996600' },
-  'Halloween': { bg: '#ee7700', text: '#000000' },
-  'Master Magicians': { bg: '#1a1a4e', text: '#ffffaa' },
-  '30th Anniversary': { bg: '#1a1a4e', text: '#ff99bb' },
-  'Team of the Season': { bg: '#ff77aa', text: '#ffffff' },
-  'Birthday': { bg: '#ff99cc', text: '#1a1a4e' },
-  'Terraces': { bg: '#228833', text: '#ffffff' },
-  'White Ice': { bg: '#e8f0ff', text: '#1a3366' },
-  'Iconic Numbers': { bg: '#ffffff', text: '#000000' },
-  'Standout': { bg: '#ffffff', text: '#226622' },
-  'Festive': { bg: '#aaffaa', text: '#cc0000' },
-  'New Year': { bg: '#1a1a4e', text: '#ffdd00' },
-  'Shockwave': { bg: '#2255cc', text: '#ffffff' },
-  'Classic': { bg: '#eeffee', text: '#cc0000' },
-  'Reign Supreme': { bg: '#ffffff', text: '#000000' },
-  'Titanium': { bg: '#444444', text: '#ffffff' },
-  'First Class': { bg: '#444444', text: '#ffffff' },
-  'Legacy': { bg: '#aaddee', text: '#2244aa' },
-  'Clarity': { bg: '#ffffff', text: '#999999' },
-  'Inferno': { bg: '#cc0000', text: '#ffdd00' },
-  'Next Goal Wins': { bg: '#33ccaa', text: '#7700aa' },
-  'Gallery': { bg: '#ffffff', text: '#ee7700' },
-  'Pitch to Dugout': { bg: '#f5eedc', text: '#000000' },
-  'Encrypted': { bg: '#cc00cc', text: '#ccddee' },
-  'Neon Noir': { bg: '#1a1a4e', text: '#ffdd00' },
-  "He's Him": { bg: '#ffffff', text: '#cc0000' },
-  'Chromium Base': { bg: '#e0d8ee', text: '#000000' },
-  'Record Breakers': { bg: '#22aa88', text: '#ffffff' },
-  'Limited Edition': { bg: '#fffde6', text: '#996600' },
-  'Baroque': { bg: '#553322', text: '#ffffff' },
-  'Box Office': { bg: '#444444', text: '#ffffff' },
-  'Glow': { bg: '#111111', text: '#88ccff' },
-  'Aeternus': { bg: '#ccdde8', text: '#aa8800' },
-  'Eternal Gold': { bg: '#cc9900', text: '#ffffff' },
-  'Darkness': { bg: '#000000', text: '#666666' },
+const COLOR_PALETTE = {
+  'white': '#ffffff',
+  'black': '#000000',
+  'dark-grey': '#444444',
+  'grey': '#999999',
+  'red': '#cc0000',
+  'orange': '#ee7700',
+  'pink': '#ff77aa',
+  'navy': '#1a1a4e',
+  'blue': '#2255cc',
+  'light-blue': '#aaccee',
+  'ice-blue': '#e8f0ff',
+  'cyan': '#00cccc',
+  'teal': '#33ccaa',
+  'purple': '#7700aa',
+  'green': '#228833',
+  'light-green': '#aaffaa',
+  'yellow': '#ffdd00',
+  'gold': '#cc9900',
+  'light-yellow': '#fffde6',
+  'beige': '#f5eedc',
+  'brown': '#553322',
+  'magenta': '#cc00cc',
+  'lime': '#33cc33',
+  'lavender': '#e0d8ee',
 };
 
 // ============================================================
-// CSV PARSING
+// COLOR & SET HELPERS
+// ============================================================
+
+function resolveColor(value) {
+  if (!value) return null;
+  if (value.startsWith('#')) return value;
+  return COLOR_PALETTE[value.toLowerCase()] || value;
+}
+
+function getSetColor(setName) {
+  if (setConfigs[setName]) {
+    return { bg: setConfigs[setName].bg, text: setConfigs[setName].text };
+  }
+  return null;
+}
+
+function getSetBackground(setName) {
+  const filename = setName.toLowerCase().replace(/['']/g, '').replace(/\s+/g, '_');
+  return `../assets/backgrounds/${filename}.jpg`;
+}
+
+function getCardNumberColor(setName) {
+  if (setConfigs[setName]) return setConfigs[setName].cardNumberColor;
+  return '#555555';
+}
+
+// ============================================================
+// DATA LOADING
+// ============================================================
+
+async function loadSetsConfig() {
+  try {
+    const response = await fetch(SETS_CSV_URL + '&_t=' + Date.now());
+    if (!response.ok) return;
+    parseSetsConfig(await response.text());
+  } catch (err) {
+    console.warn('Failed to load sets config:', err);
+  }
+}
+
+function parseSetsConfig(text) {
+  const lines = parseCSVLines(text);
+  if (lines.length < 2) return;
+
+  const header = lines[0].map(col => col.trim());
+  setConfigs = {};
+
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i];
+    if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+
+    const entry = {};
+    for (let j = 0; j < header.length; j++) {
+      entry[header[j]] = (row[j] || '').trim();
+    }
+
+    const setName = entry['Set Name'];
+    if (!setName) continue;
+
+    const config = {
+      bg: resolveColor(entry['Background Color']) || '#ffffff',
+      text: resolveColor(entry['Text Color']) || '#000000',
+      cardNumberColor: resolveColor(entry['Card Number Color']) || '#555555',
+      parallelType: entry['Parallel Type'] || 'STANDARD',
+      partialParallelCards: null,
+      omegaCard: entry['Omega Card']
+        ? new Set(entry['Omega Card'].split(',').map(s => s.trim()).filter(Boolean))
+        : null,
+    };
+
+    if (config.parallelType === 'PARTIAL' && entry['Partial Parallel Cards']) {
+      config.partialParallelCards = new Set(
+        entry['Partial Parallel Cards'].split(',').map(s => s.trim()).filter(Boolean)
+      );
+    }
+
+    setConfigs[setName] = config;
+  }
+}
+
+async function loadCards() {
+  const response = await fetch(SHEET_CSV_URL + '&_t=' + Date.now());
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return parseCSV(await response.text());
+}
+
+function parseCSV(text) {
+  const lines = parseCSVLines(text);
+  if (lines.length < 2) return [];
+
+  const header = lines[0].map(col => col.trim());
+  const cards = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i];
+    if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+    const card = {};
+    for (let j = 0; j < header.length; j++) {
+      card[header[j]] = (row[j] || '').trim();
+    }
+    card['Parallel'] = 'Base';
+    cards.push(card);
+  }
+
+  return cards;
+}
+
+// ============================================================
+// CSV LINE PARSER
 // ============================================================
 
 function parseCSVLines(text) {
@@ -103,43 +189,15 @@ function parseCSVLines(text) {
   return lines;
 }
 
-function parseCardsFromCSV(text) {
-  const lines = parseCSVLines(text);
-  if (lines.length < 2) return { baseCards: [], allCards: [], parallels: [] };
-
-  const header = lines[0].map(col => col.trim());
-  const baseCards = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const row = lines[i];
-    if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
-    const card = {};
-    for (let j = 0; j < header.length; j++) {
-      card[header[j]] = (row[j] || '').trim();
-    }
-    card['Parallel'] = 'Base';
-    baseCards.push(card);
-  }
-
-  // Reclassify special parallels
-  baseCards.forEach(card => {
-    const sp = SPECIAL_PARALLELS[card['Card #']];
-    if (sp) { card['Parallel'] = sp.parallel; card['Set'] = sp.set; card['Card #'] = sp.cardNum; }
-  });
-
-  const parallels = generateParallels(baseCards);
-  const allCards = baseCards.concat(parallels);
-  return { baseCards, allCards, parallels };
-}
-
 // ============================================================
 // PARALLEL GENERATION
 // ============================================================
 
-function generateParallels(baseCards) {
+function generateParallels(cards) {
   const parallels = [];
-  baseCards.forEach(card => {
-    if (card['Parallels?'] !== 'Y') return;
+
+  cards.forEach(card => {
+    if (!shouldGenerateParallels(card)) return;
     const isGK = card['Position'] === 'Goalkeeper';
     parallels.push(makeParallel(card, '\u03B1/\u03B1', isGK ? { shotblocking: 1 } : { Defence: 2 }));
     parallels.push(makeParallel(card, '#/77', isGK ? { shotblocking: 1 } : { Attack: 2 }));
@@ -147,11 +205,29 @@ function generateParallels(baseCards) {
     parallels.push(makeParallel(card, '#/44', isGK ? { shotblocking: 2 } : { swap: true }));
     parallels.push(makeParallel(card, '#/11', isGK ? { shotblocking: 2 } : { Skill: 2 }));
   });
-  baseCards.forEach(card => {
-    if (card['Omega?'] !== 'Y' || card['Parallel'] !== 'Base') return;
+
+  // Omega parallels (only for the specific card listed in set metadata)
+  cards.forEach(card => {
+    if (card['Parallel'] !== 'Base') return;
+    if (!shouldGenerateParallels(card)) return;
+    const config = setConfigs[card['Set']];
+    if (!config || !config.omegaCard) return;
+    if (!config.omegaCard.has(card['Card #'])) return;
     parallels.push(makeParallel(card, '\u03A9/\u03A9', { Attack: 2, Defence: 2, Skill: 2, Energy: -1 }));
   });
+
   return parallels;
+}
+
+function shouldGenerateParallels(card) {
+  const setName = card['Set'];
+  const config = setConfigs[setName];
+  if (!config) return false;
+  if (config.parallelType === 'NO_DIGITAL') return false;
+  if (config.parallelType === 'PARTIAL') {
+    return config.partialParallelCards && config.partialParallelCards.has(card['Card #']);
+  }
+  return true;
 }
 
 function makeParallel(card, parallelName, mods) {
@@ -177,10 +253,19 @@ function boostShotblocking(text, amount) {
 // CARD RENDERING
 // ============================================================
 
-function buildCardElement(card, skipInteractions) {
+function buildCardElement(card) {
   const div = document.createElement('div');
   div.className = 'card';
 
+  const cardSetName = card['Set'] || '';
+  const bgImage = setConfigs[cardSetName] ? getSetBackground(cardSetName) : null;
+  if (bgImage) {
+    div.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url(${bgImage})`;
+    div.style.backgroundSize = 'cover';
+    div.style.backgroundPosition = 'center';
+  }
+
+  // Parallel badge
   const parallel = card['Parallel'] || 'Base';
   if (parallel !== 'Base') {
     const badge = document.createElement('div');
@@ -189,27 +274,32 @@ function buildCardElement(card, skipInteractions) {
     div.appendChild(badge);
   }
 
+  // Set header
   const setEl = document.createElement('div');
   setEl.className = 'card-set';
   const setName = card['Set'] || '';
   const license = card['License'] || '';
   setEl.textContent = [license, setName].filter(Boolean).join(' | ');
-  const setColor = SET_COLORS[setName];
+  const setColor = getSetColor(setName);
   if (setColor) { setEl.style.background = setColor.bg; setEl.style.color = setColor.text; }
   div.appendChild(setEl);
 
+  // Player info
+  const playerInfo = document.createElement('div');
+  playerInfo.className = 'card-player-info';
   const nameEl = document.createElement('div');
   nameEl.className = 'card-name';
   nameEl.textContent = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim() || '(unnamed)';
-  div.appendChild(nameEl);
-
+  playerInfo.appendChild(nameEl);
   if (card['Club']) {
     const clubEl = document.createElement('div');
     clubEl.className = 'card-club';
     clubEl.textContent = card['Club'];
-    div.appendChild(clubEl);
+    playerInfo.appendChild(clubEl);
   }
+  div.appendChild(playerInfo);
 
+  // Bottom section
   const bottomEl = document.createElement('div');
   bottomEl.className = 'card-bottom';
 
@@ -249,9 +339,11 @@ function buildCardElement(card, skipInteractions) {
 
   div.appendChild(bottomEl);
 
+  // Card number
   const cardNumEl = document.createElement('div');
   cardNumEl.className = 'card-number';
   cardNumEl.textContent = card['Card #'] || '';
+  if (bgImage) cardNumEl.style.color = getCardNumberColor(cardSetName);
   div.appendChild(cardNumEl);
 
   return div;
@@ -268,7 +360,7 @@ function appendAbility(container, title, text) {
   if (!title || title === 'N/A') return;
   const el = document.createElement('div');
   el.className = 'card-ability';
-  el.innerHTML = `<strong>${escapeHtml(title)}</strong>${text && text !== 'N/A' ? ' <span>' + escapeHtml(text) + '</span>' : ''}`;
+  el.innerHTML = `<strong>${escapeHtml(title)}</strong>${text && text !== 'N/A' ? '<br><span>' + escapeHtml(text) + '</span>' : ''}`;
   container.appendChild(el);
 }
 
@@ -280,7 +372,7 @@ let _previewEl = null;
 
 function showPreview(card, rowEl) {
   hidePreview();
-  _previewEl = buildCardElement(card, true);
+  _previewEl = buildCardElement(card);
   _previewEl.classList.add('deck-preview');
   document.body.appendChild(_previewEl);
   const rowRect = rowEl.getBoundingClientRect();
@@ -297,13 +389,23 @@ function hidePreview() {
 // DECK ROW RENDERING
 // ============================================================
 
-function buildSharedDeckRow(card) {
+function buildDeckRow(card) {
   const row = document.createElement('div');
   row.className = 'deck-row';
 
   const setName = card['Set'] || '';
-  const setColor = SET_COLORS[setName];
+  const setColor = getSetColor(setName);
   if (setColor) row.style.borderLeft = `4px solid ${setColor.bg}`;
+  const bgImage = setConfigs[setName] ? getSetBackground(setName) : null;
+  if (bgImage) {
+    row.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url(${bgImage})`;
+    row.style.backgroundSize = 'cover';
+    row.style.backgroundPosition = 'center';
+  }
+
+  // Content wrapper
+  const contentWrapper = document.createElement('div');
+  contentWrapper.className = 'deck-content';
 
   const leftCol = document.createElement('div');
   leftCol.className = 'deck-left';
@@ -322,7 +424,7 @@ function buildSharedDeckRow(card) {
     }
   });
   leftCol.appendChild(stBox);
-  row.appendChild(leftCol);
+  contentWrapper.appendChild(leftCol);
 
   const rightCol = document.createElement('div');
   rightCol.className = 'deck-right';
@@ -341,8 +443,10 @@ function buildSharedDeckRow(card) {
   statsEl.innerHTML = `<span class="ds-def">${card['Defence'] || '0'}</span><span class="ds-skl">${card['Skill'] || '0'}</span><span class="ds-atk">${card['Attack'] || '0'}</span>`;
   bottomLine.appendChild(statsEl);
   rightCol.appendChild(bottomLine);
-  row.appendChild(rightCol);
+  contentWrapper.appendChild(rightCol);
+  row.appendChild(contentWrapper);
 
+  // Parallel badge
   const parallel = card['Parallel'] || 'Base';
   if (parallel !== 'Base') {
     const badge = document.createElement('span');
