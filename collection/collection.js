@@ -109,6 +109,7 @@
     } catch (err) {
       console.error('Failed to load collections:', err);
       collectionsList.innerHTML = '<p style="color:#c00;font-size:0.85rem;">Failed to load collections.</p>';
+      createBtn.style.display = '';
     }
   }
 
@@ -116,6 +117,7 @@
     collectionsList.innerHTML = '';
     if (userCollections.length === 0) {
       collectionsList.innerHTML = '<p style="color:#888;font-size:0.85rem;">No collections yet. Create one to start tracking!</p>';
+      createBtn.style.display = '';
       return;
     }
     userCollections.forEach(col => {
@@ -148,7 +150,15 @@
     });
 
     // Hide create button if at max
-    createBtn.style.display = userCollections.length >= MAX_COLLECTIONS ? 'none' : '';
+    if (userCollections.length >= MAX_COLLECTIONS) {
+      createBtn.style.display = 'none';
+      const limitMsg = document.createElement('p');
+      limitMsg.style.cssText = 'color:#888;font-size:0.8rem;margin-top:0.5rem;';
+      limitMsg.textContent = `Maximum ${MAX_COLLECTIONS} collections reached.`;
+      collectionsList.appendChild(limitMsg);
+    } else {
+      createBtn.style.display = '';
+    }
   }
 
   function countOwnedCards(cards) {
