@@ -1382,8 +1382,12 @@ main {
   flex: 1;
 }
 #rule-banner-text.rule-active {
+  color: #111;
+  font-weight: 700;
+}
+#rule-banner-text.rule-unset {
   color: #e94560;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Pool edit modal */
@@ -1562,17 +1566,22 @@ main {
   position: relative;
 }
 .pool-kebab-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  color: #666;
+  background: #fff;
+  border: 1px solid #ddd;
+  font-size: 0.75rem;
+  color: #333;
   cursor: pointer;
-  padding: 0.2rem 0.4rem;
+  padding: 0.35rem 0.7rem;
   line-height: 1;
-  border-radius: 3px;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 .pool-kebab-btn:hover {
-  background: #eee;
+  background: #f0f0f2;
+  border-color: #bbb;
+}
+.pool-kebab-btn.hidden {
+  display: none;
 }
 .pool-kebab-menu {
   position: absolute;
@@ -1774,7 +1783,6 @@ main {
 /* Rule import section (collapsible, inside editor modal) */
 .rule-import-section {
   margin-bottom: 0.5rem;
-  border-top: 1px solid #eee;
   padding-top: 0.5rem;
 }
 .rule-import-header {
@@ -1794,22 +1802,6 @@ main {
 .rule-import-section.collapsed .rule-import-header {
   /* Rotate arrow when collapsed */
 }
-
-/* Rule details button */
-#rule-details-btn {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.65rem;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  background: #fff;
-  color: #2255cc;
-  cursor: pointer;
-}
-#rule-details-btn:hover {
-  background: #eef4ff;
-  border-color: #2255cc;
-}
-#rule-details-btn.hidden { display: none; }
 
 /* Deck validation violations */
 #deck-warnings {

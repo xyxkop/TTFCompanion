@@ -166,6 +166,7 @@
       buildParallelsSection();
       initRuleUI();
       restoreSessionState();
+      updateRuleBanner();
       applyFilters();
       loadDeckFromHash();
     } catch (err) {
@@ -491,8 +492,9 @@
 
     const header = document.createElement('div');
     header.className = 'filter-section-header';
-    header.innerHTML = `<span class="filter-section-arrow">&#9662;</span> <span class="filter-section-title">Parallels</span><span class="filter-section-badge"></span>`;
-    header.addEventListener('click', () => section.classList.toggle('collapsed'));
+    header.innerHTML = `<span class="filter-section-arrow">&#9662;</span> <span class="filter-section-title">Parallels</span><span class="filter-section-badge"></span><button class="filter-section-reset" title="Clear group filters">&times;</button>`;
+    header.querySelector('.filter-section-title').addEventListener('click', () => section.classList.toggle('collapsed'));
+    header.querySelector('.filter-section-arrow').addEventListener('click', () => section.classList.toggle('collapsed'));
     section.appendChild(header);
 
     const content = document.createElement('div');
@@ -514,6 +516,13 @@
         onParallelsChange(pillsDiv);
       });
       pillsDiv.appendChild(item);
+    });
+
+    // Reset button: re-select all parallels
+    header.querySelector('.filter-section-reset').addEventListener('click', (e) => {
+      e.stopPropagation();
+      pillsDiv.querySelectorAll('.tristate-item').forEach(i => { i.dataset.state = 'include'; });
+      onParallelsChange(pillsDiv);
     });
 
     content.appendChild(pillsDiv);
@@ -1800,11 +1809,13 @@
     const textEl = document.getElementById('rule-banner-text');
     const detailsBtn = document.getElementById('rule-details-btn');
     if (poolActive || activeRules.length > 0) {
-      textEl.textContent = `Rule: ${poolDescription || 'Custom'}`;
+      textEl.textContent = `Dynamic Rule: ${poolDescription || 'Custom'}`;
+      textEl.classList.remove('rule-unset');
       textEl.classList.add('rule-active');
     } else {
-      textEl.textContent = 'Rule: None';
+      textEl.textContent = 'Dynamic Rule: Not Set';
       textEl.classList.remove('rule-active');
+      textEl.classList.add('rule-unset');
     }
     detailsBtn.classList.toggle('hidden', !ruleDetails);
   }
@@ -2067,6 +2078,7 @@
       readPoolFromUI(modal);
       activeRules = readRulesFromUI(modal);
       poolDescription = 'Custom';
+      ruleDetails = '';
       updateRuleBanner();
       applyFilters();
       renderDeck();
