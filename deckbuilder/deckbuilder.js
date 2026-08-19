@@ -163,7 +163,9 @@
     cardListEl.innerHTML = '<p class="placeholder">Loading cards...</p>';
     try {
       // Fetch both in parallel
-      const [_, baseCards] = await Promise.all([loadSetsConfig(), loadCards()]);
+      const [_, loadedCards] = await Promise.all([loadSetsConfig(), loadCards()]);
+      // Exclude collectible-but-not-playable sets from the deck builder
+      const baseCards = loadedCards.filter(c => isSetPlayable(c['Set']));
       const parallels = generateParallels(baseCards);
       allCards = baseCards.concat(parallels);
       populateFilterOptions(baseCards);

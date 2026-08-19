@@ -125,6 +125,9 @@ function parseSetsConfig(text) {
       omegaCard: entry['Omega Card']
         ? new Set(entry['Omega Card'].split(',').map(s => s.trim()).filter(Boolean))
         : null,
+      // Playable defaults to true; only an explicit FALSE marks a set as
+      // collectible-but-not-playable (excluded from the deck builder).
+      playable: (entry['Playable'] || '').trim().toUpperCase() !== 'FALSE',
     };
 
     if (config.parallelType === 'PARTIAL' && entry['Partial Parallel Cards']) {
@@ -217,6 +220,16 @@ function generateParallels(cards) {
   });
 
   return parallels;
+}
+
+/**
+ * Whether a set is playable (usable in the deck builder).
+ * Sets without metadata default to playable; only an explicit
+ * Playable=FALSE in set metadata marks a set as collectible-only.
+ */
+function isSetPlayable(setName) {
+  const config = setConfigs[setName];
+  return !config || config.playable !== false;
 }
 
 function shouldGenerateParallels(card) {
