@@ -343,10 +343,18 @@
         ? `<span style="background:${setColor.bg};color:${setColor.text};border-radius:3px;padding:0.1rem 0.3rem;display:inline-block;">${escapeHtml(cardNum)}</span>`
         : escapeHtml(cardNum);
 
+      // Rookie / Legend tag next to player name
+      const cardType = (card['Card Type'] || '').trim().toLowerCase();
+      let typeTag = '';
+      if (cardType === 'rookie') typeTag = '<span class="card-type-tag card-type-rookie">RC</span>';
+      else if (cardType === 'legend') typeTag = '<span class="card-type-tag card-type-legend">L</span>';
+
+      const playerName = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim();
+
       row.innerHTML = `
         <span class="col-num">${numInner}</span>
         <span class="col-set">${escapeHtml(setName)}</span>
-        <span class="col-name">${escapeHtml(`${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim())}</span>
+        <span class="col-name" title="${escapeHtml(playerName)}"><span class="col-name-text">${escapeHtml(playerName)}</span>${typeTag}</span>
         <span class="col-club">${escapeHtml(card['Club'] || '')}</span>
       `;
 

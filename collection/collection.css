@@ -163,7 +163,21 @@ main {
 .card-row:hover { background: #fafafa; }
 .col-num { width: 45px; flex-shrink: 0; color: #888; font-size: 0.75rem; }
 .col-set { width: 120px; flex-shrink: 0; font-size: 0.7rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.col-name { width: 160px; flex-shrink: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col-name { width: 220px; flex-shrink: 0; font-weight: 600; display: flex; align-items: center; overflow: hidden; padding-right: 0.6rem; box-sizing: border-box; }
+.col-name-text { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.card-type-tag {
+  flex-shrink: 0;
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+  vertical-align: middle;
+}
+.card-type-rookie { background: #1a2a6c; }
+.card-type-legend { background: #c8a020; }
 .col-club { width: 140px; flex-shrink: 0; font-size: 0.75rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .parallel-header {
   width: 40px;
