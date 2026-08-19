@@ -277,6 +277,61 @@ main {
   display: none;
 }
 
+/* Advanced Options section */
+.advanced-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.advanced-option-row input[type="checkbox"] {
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.owned-collection-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.owned-collection-picker label {
+  font-size: 0.78rem;
+  color: #555;
+}
+.owned-collection-picker select {
+  width: 100%;
+  padding: 0.35rem;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+}
+
+/* Warning modal (no digital collections) */
+.warning-modal-text {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.4;
+  margin: 0.5rem 0 1rem;
+}
+.warning-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+.warning-modal-actions .share-close-btn {
+  width: auto;
+  margin-top: 0;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+}
+.warning-goto-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .filter-group label {
   display: block;
   font-size: 0.75rem;

@@ -66,6 +66,11 @@
   let poolDescription = ''; // Human-readable pool description (from quick load)
   let activeRules = []; // Deck validation rules currently in effect
 
+  // Owned-cards filter (Advanced Options)
+  let ownedOnly = false;             // Whether "show owned cards only" is enabled
+  let ownedCollectionId = null;      // Selected digital collection id
+  let userDigitalCollections = [];   // Loaded digital collections [{ id, name, cards, ... }]
+
   // ============================================================
   // DOM REFERENCES
   // ============================================================
@@ -164,6 +169,7 @@
       populateFilterOptions(baseCards);
       buildFilterUI();
       buildParallelsSection();
+      buildAdvancedSection();
       initRuleUI();
       restoreSessionState();
       updateRuleBanner();
@@ -533,6 +539,145 @@
     activeFilters['Parallel'] = { type: 'multiselect', values: [...PARALLELS_DEF.options] };
   }
 
+  /**
+   * Advanced Options filter section.
+   * Contains "Show owned cards only" toggle + digital collection picker.
+   */
+  function buildAdvancedSection() {
+    const section = document.createElement('div');
+    section.className = 'filter-section collapsed';
+
+    const header = document.createElement('div');
+    header.className = 'filter-section-header';
+    header.innerHTML = `<span class="filter-section-arrow">&#9662;</span> <span class="filter-section-title">Advanced Options</span><span class="filter-section-badge"></span>`;
+    header.querySelector('.filter-section-title').addEventListener('click', () => section.classList.toggle('collapsed'));
+    header.querySelector('.filter-section-arrow').addEventListener('click', () => section.classList.toggle('collapsed'));
+    section.appendChild(header);
+
+    const content = document.createElement('div');
+    content.className = 'filter-section-content';
+
+    // "Show owned cards only" checkbox
+    const optionRow = document.createElement('label');
+    optionRow.className = 'advanced-option-row';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = 'owned-only-checkbox';
+    const optionText = document.createElement('span');
+    optionText.textContent = 'Show owned cards only';
+    optionRow.appendChild(checkbox);
+    optionRow.appendChild(optionText);
+    content.appendChild(optionRow);
+
+    // Collection picker (hidden until checkbox is on)
+    const picker = document.createElement('div');
+    picker.className = 'owned-collection-picker';
+    picker.id = 'owned-collection-picker';
+    picker.style.display = 'none';
+    const pickerLabel = document.createElement('label');
+    pickerLabel.textContent = 'Show owned cards from collection:';
+    const select = document.createElement('select');
+    select.id = 'owned-collection-select';
+    picker.appendChild(pickerLabel);
+    picker.appendChild(select);
+    content.appendChild(picker);
+
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        if (userDigitalCollections.length === 0) {
+          // No digital collections available — warn and revert
+          checkbox.checked = false;
+          showNoDigitalCollectionsWarning();
+          return;
+        }
+        ownedOnly = true;
+        // Default to first collection if none selected
+        if (!ownedCollectionId || !userDigitalCollections.some(c => c.id === ownedCollectionId)) {
+          ownedCollectionId = userDigitalCollections[0].id;
+        }
+      } else {
+        ownedOnly = false;
+      }
+      updateOwnedUI();
+      applyFilters();
+    });
+
+    select.addEventListener('change', () => {
+      ownedCollectionId = select.value || null;
+      applyFilters();
+    });
+
+    section.appendChild(content);
+    filtersContainer.appendChild(section);
+
+    populateOwnedCollectionDropdown();
+    updateOwnedUI();
+  }
+
+  /** Fill the digital-collection dropdown from userDigitalCollections. */
+  function populateOwnedCollectionDropdown() {
+    const select = document.getElementById('owned-collection-select');
+    if (!select) return;
+    select.innerHTML = '';
+    userDigitalCollections.forEach(col => {
+      select.appendChild(new Option(col.name, col.id));
+    });
+    // Preserve the selected collection if still present
+    if (ownedCollectionId && userDigitalCollections.some(c => c.id === ownedCollectionId)) {
+      select.value = ownedCollectionId;
+    } else if (userDigitalCollections.length > 0) {
+      ownedCollectionId = select.value || userDigitalCollections[0].id;
+      select.value = ownedCollectionId;
+    }
+  }
+
+  /** Sync the Advanced Options UI (checkbox + picker visibility) with state. */
+  function updateOwnedUI() {
+    const checkbox = document.getElementById('owned-only-checkbox');
+    const picker = document.getElementById('owned-collection-picker');
+    if (!checkbox || !picker) return;
+    // If enabled but no collections available (e.g. after sign-out), disable
+    if (ownedOnly && userDigitalCollections.length === 0) {
+      ownedOnly = false;
+    }
+    checkbox.checked = ownedOnly;
+    picker.style.display = ownedOnly ? '' : 'none';
+  }
+
+  /**
+   * Warn the user they have no digital collections to filter by.
+   * Offers Cancel and Go to Collection Tracker (disabled if signed out).
+   */
+  function showNoDigitalCollectionsWarning() {
+    const existing = document.querySelector('.share-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'share-modal-overlay';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const signedIn = !!currentUser;
+    const modal = document.createElement('div');
+    modal.className = 'share-modal';
+    modal.innerHTML = `
+      <h3>No Digital Collections</h3>
+      <p class="warning-modal-text">You don't have any digital collections yet. Create one in the Collection Tracker to filter by owned cards${signedIn ? '' : ' (requires sign-in)'}.</p>
+      <div class="warning-modal-actions">
+        <button class="share-close-btn warning-cancel-btn">Cancel</button>
+        <button class="share-copy-btn warning-goto-btn"${signedIn ? '' : ' disabled'}>Go to Collection Tracker</button>
+      </div>
+    `;
+
+    modal.querySelector('.warning-cancel-btn').addEventListener('click', () => overlay.remove());
+    const gotoBtn = modal.querySelector('.warning-goto-btn');
+    if (signedIn) {
+      gotoBtn.addEventListener('click', () => { window.location.href = '../collection/'; });
+    }
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
   function onParallelsChange(pillsDiv) {
     const selected = [];
     pillsDiv.querySelectorAll('.tristate-item').forEach(item => {
@@ -633,6 +778,7 @@
       // Click-through mode: bypass sidebar filters, only respect parallel filter + pool
       filteredCards = allCards.filter(card => {
         if (poolActive && !matchesPool(card)) return false;
+        if (!matchesOwned(card)) return false;
         if (activeFilters['Parallel']) {
           if (!activeFilters['Parallel'].values.includes(card['Parallel'])) return false;
         }
@@ -642,6 +788,7 @@
       // Normal mode: apply pool + all sidebar filters
       filteredCards = allCards.filter(card => {
         if (poolActive && !matchesPool(card)) return false;
+        if (!matchesOwned(card)) return false;
 
         for (const col of Object.keys(activeFilters)) {
           const filter = activeFilters[col];
@@ -1405,11 +1552,24 @@
       // Load from cache immediately, then sync from Firestore
       savedDecksList = loadSavedDecksFromCache();
       loadSavedDecks().then(decks => { savedDecksList = decks; });
+      // Load the user's digital collections for the owned-cards filter
+      loadUserCollections().then(cols => {
+        userDigitalCollections = cols.filter(c => c.type === 'digital');
+        populateOwnedCollectionDropdown();
+        updateOwnedUI();
+        if (ownedOnly) applyFilters();
+      });
     } else {
       savedDecksList = [];
       loadedDeckId = null;
       loadedDeckName = '';
       updateSaveDeckBtn();
+      // Clear collection-backed owned filter on sign-out
+      userDigitalCollections = [];
+      populateOwnedCollectionDropdown();
+      const wasOwned = ownedOnly;
+      updateOwnedUI();
+      if (wasOwned) applyFilters();
     }
   }
 
@@ -1421,6 +1581,19 @@
   // Pool: pre-filter restricting visible cards (set, skill type, club, ability).
   // Rules: deck composition constraints validated after building.
   // ============================================================
+
+  /**
+   * Check if a card is owned in the selected digital collection.
+   * Returns true (no filtering) when the owned filter is off or the
+   * selected collection can't be found (e.g. stale/deleted id).
+   */
+  function matchesOwned(card) {
+    if (!ownedOnly || !ownedCollectionId) return true;
+    const col = userDigitalCollections.find(c => c.id === ownedCollectionId);
+    if (!col) return true;
+    const owned = (col.cards && col.cards[card['Card #']]) || [];
+    return owned.includes(card['Parallel']);
+  }
 
   /** Check if a card passes the active card pool restrictions */
   function matchesPool(card) {
@@ -2962,6 +3135,8 @@
           : null,
         ruleDesc: poolDescription,
         ruleDetails: ruleDetails,
+        ownedOnly: ownedOnly,
+        ownedCollectionId: ownedCollectionId,
       };
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
     } catch (e) { /* ignore quota errors */ }
@@ -2997,6 +3172,13 @@
         // Update filter UI to match restored state
         restoreFilterUI();
       }
+
+      // Restore owned-cards filter (collections load async via auth listener;
+      // updateOwnedUI/populateOwnedCollectionDropdown reconcile once loaded)
+      ownedOnly = !!state.ownedOnly;
+      ownedCollectionId = state.ownedCollectionId || null;
+      populateOwnedCollectionDropdown();
+      updateOwnedUI();
 
       // Restore deck
       if (state.deck) {

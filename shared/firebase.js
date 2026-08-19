@@ -131,6 +131,26 @@ async function loadUserCollection() {
 }
 
 /**
+ * Load all of the current user's collections from the
+ * users/{uid}/collections subcollection.
+ * Returns an array of { id, name, type, cards, wantLists, ... }.
+ * Returns [] if not signed in or on error.
+ */
+async function loadUserCollections() {
+  if (!currentUser) return [];
+  try {
+    const snapshot = await db.collection('users').doc(currentUser.uid)
+      .collection('collections').get();
+    const cols = [];
+    snapshot.forEach(doc => cols.push({ id: doc.id, ...doc.data() }));
+    return cols;
+  } catch (err) {
+    console.error('Failed to load collections:', err);
+    return [];
+  }
+}
+
+/**
  * Save the user's card collection to Firestore.
  * Uses merge to avoid overwriting other user fields.
  * Debounced externally - call this after your debounce timer fires.
