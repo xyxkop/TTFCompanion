@@ -1,14 +1,17 @@
 /**
- * TTF Companion - Fusion Helper controller.
+ * TTF Companion - Fusion Helper controller (ES module).
  * Loads cards + fusion definitions, wires the synergy filter and the
- * combination suggester, and renders results. Uses the pure engine in
- * fusion-engine.js (global FusionEngine).
+ * combination suggester, and renders results.
  */
-(function () {
-  'use strict';
+import * as Parallels from '../shared/parallels.js';
+import * as E from './fusion-engine.js';
+import { POSITION_LABELS, SKILL_TYPE_ICONS } from '../shared/config.js';
+import { escapeHtml } from '../shared/util.js';
+import { loadSetsConfig, setConfigs, getSetColor, getSetBackground } from '../shared/sets.js';
+import { loadCards, loadFusions } from '../shared/data.js';
+import { shouldGenerateParallels } from '../shared/cards.js';
 
-  const E = window.FusionEngine;
-  const $ = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
   // ---- State ----
   let allBaseCards = [];      // base cards only (Parallel === 'Base')
@@ -388,4 +391,3 @@
       </div>`;
     }).join('');
   }
-})();

@@ -1,11 +1,14 @@
 /**
- * TTF Companion - Collection Tracker
+ * TTF Companion - Collection Tracker (ES module)
  * Track owned cards across physical and digital collections.
  */
-(function () {
-  'use strict';
+import * as Parallels from '../shared/parallels.js';
+import { escapeHtml, normalize } from '../shared/util.js';
+import { loadSetsConfig, setConfigs, getSetColor } from '../shared/sets.js';
+import { loadCards } from '../shared/data.js';
+import { currentUser, db, onAuthStateChange } from '../shared/firebase.js';
 
-  const { Parallel } = Parallels;
+const { Parallel } = Parallels;
   // Digital column list: Base + all digital parallels.
   const DIGITAL_PARALLELS = ['Base', ...Parallels.DIGITAL_ORDER];
   // Physical parallels currently tracked across all set types.
@@ -804,4 +807,3 @@
     setCompletion.classList.remove('hidden');
   }
 
-})();

@@ -1,0 +1,10 @@
+{
+  "name": "ttf-companion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TTF Companion - static web tools (ES modules).",
+  "scripts": {
+    "test": "node fusion/fusion.test.js"
+  }
+}

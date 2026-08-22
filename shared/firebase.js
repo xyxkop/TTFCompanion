@@ -1,8 +1,10 @@
 /**
- * TTF Companion - Firebase Module
+ * TTF Companion - Firebase Module (ES module)
  * Authentication (Google Sign-In) and Firestore helpers.
- * Loaded after shared.js via CDN scripts (no bundler needed).
+ * Relies on the global `firebase` object from the CDN compat scripts, which are
+ * loaded as classic <script> tags before this (deferred) module executes.
  */
+import { escapeHtml } from './util.js';
 
 // ============================================================
 // FIREBASE CONFIG & INIT
@@ -112,25 +114,6 @@ function renderAuthUI() {
 // ============================================================
 
 /**
- * Load the current user's card collection from Firestore.
- * Returns an object like: { "CARD#": ["Base", "#/77", ...], ... }
- * Returns null if not signed in or no data exists.
- */
-async function loadUserCollection() {
-  if (!currentUser) return null;
-  try {
-    const doc = await db.collection('users').doc(currentUser.uid).get();
-    if (doc.exists) {
-      return doc.data().collection || {};
-    }
-    return {};
-  } catch (err) {
-    console.error('Failed to load collection:', err);
-    return null;
-  }
-}
-
-/**
  * Load all of the current user's collections from the
  * users/{uid}/collections subcollection.
  * Returns an array of { id, name, type, cards, wantLists, ... }.
@@ -148,49 +131,6 @@ async function loadUserCollections() {
     console.error('Failed to load collections:', err);
     return [];
   }
-}
-
-/**
- * Save the user's card collection to Firestore.
- * Uses merge to avoid overwriting other user fields.
- * Debounced externally - call this after your debounce timer fires.
- */
-async function saveUserCollection(collectionData) {
-  if (!currentUser) return false;
-  try {
-    await db.collection('users').doc(currentUser.uid).set(
-      { collection: collectionData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
-      { merge: true }
-    );
-    return true;
-  } catch (err) {
-    console.error('Failed to save collection:', err);
-    return false;
-  }
-}
-
-// ============================================================
-// DEBOUNCE HELPER FOR WRITES
-// ============================================================
-
-let _saveTimer = null;
-let _pendingCollection = null;
-
-/**
- * Queue a collection save. Debounces writes to Firestore (2s delay).
- * Call this every time the user toggles a card's ownership.
- */
-function queueCollectionSave(collectionData) {
-  _pendingCollection = collectionData;
-  if (_saveTimer) clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(async () => {
-    _saveTimer = null;
-    if (_pendingCollection) {
-      const data = _pendingCollection;
-      _pendingCollection = null;
-      await saveUserCollection(data);
-    }
-  }, 2000);
 }
 
 // ============================================================
@@ -307,3 +247,18 @@ async function deleteDeckFromFirestore(deckId) {
     return false;
   }
 }
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
+export {
+  db,
+  currentUser,
+  onAuthStateChange,
+  loadUserCollections,
+  loadSavedDecks,
+  loadSavedDecksFromCache,
+  saveDeckToFirestore,
+  deleteDeckFromFirestore,
+};

@@ -1,13 +1,23 @@
 /**
- * TTF Companion
- * A lightweight companion tool for the Topps Total Football mobile game.
- * Card browser, deck builder, and more.
+ * TTF Companion - Deck Builder controller (ES module).
+ * Card browser, deck builder, rules, sharing, and saved decks.
  */
-(function () {
-  'use strict';
+import * as Parallels from '../shared/parallels.js';
+import { SPREADSHEET_BASE, POSITION_LABELS, SKILL_TYPE_ICONS } from '../shared/config.js';
+import { parseCSVLines } from '../shared/csv.js';
+import { escapeHtml, normalize } from '../shared/util.js';
+import {
+  loadSetsConfig, setConfigs, isSetPlayable, getSetColor, getSetBackground, getCardNumberColor,
+} from '../shared/sets.js';
+import { loadCards } from '../shared/data.js';
+import { generateParallels, shouldGenerateParallels, buildStat, appendAbility } from '../shared/cards.js';
+import {
+  currentUser, onAuthStateChange, loadUserCollections,
+  loadSavedDecks, loadSavedDecksFromCache, saveDeckToFirestore, deleteDeckFromFirestore,
+} from '../shared/firebase.js';
 
-  // ============================================================
-  // FILTER DEFINITIONS
+// ============================================================
+// FILTER DEFINITIONS
   // Declarative config for each filter control in the sidebar.
   // Options are populated dynamically from card data after load.
   // ============================================================
@@ -335,7 +345,7 @@
       search.addEventListener('input', () => {
         const q = normalize(search.value);
         dropdown.querySelectorAll('.multiselect-option').forEach(opt => {
-          opt.style.display = normalize(opt.textContent).includes(q) ? '' : 'none';
+          opt.style.display = opt.dataset.normalized.includes(q) ? '' : 'none';
         });
       });
       search.addEventListener('click', e => e.stopPropagation());
@@ -370,6 +380,7 @@
     def.options.forEach(val => {
       const labelEl = document.createElement('label');
       labelEl.className = 'multiselect-option';
+      labelEl.dataset.normalized = normalize(val); // cache for fast search filtering
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.value = val;
@@ -3252,4 +3263,3 @@
     }
   }
 
-})();

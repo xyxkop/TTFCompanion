@@ -2,9 +2,8 @@
  * Node tests for the Fusion Helper synergy engine.
  * Run: node fusion/fusion.test.js
  */
-'use strict';
-const E = require('./fusion-engine.js');
-const { Parallel } = require('../shared/parallels.js');
+import * as E from './fusion-engine.js';
+import { Parallel } from '../shared/parallels.js';
 
 let passed = 0, failed = 0;
 function ok(name, cond) {
