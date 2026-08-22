@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fusion Helper - TTF Companion</title>
+  <link rel="stylesheet" href="../shared/shared.css">
+  <link rel="stylesheet" href="fusion.css">
+</head>
+<body>
+  <header>
+    <h1><a href="../" style="color:inherit;text-decoration:none">TTF Companion</a> / Fusion Helper</h1>
+    <div id="header-right"></div>
+  </header>
+
+  <main>
+    <aside id="fusion-sidebar">
+      <div class="fusion-week-picker">
+        <label for="fusion-week-select">Fusion Week</label>
+        <select id="fusion-week-select"></select>
+      </div>
+
+      <div id="fusion-summary" class="fusion-summary"></div>
+
+      <div class="fusion-section">
+        <h2>Filter Cards</h2>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <label>Synergy range</label>
+            <span id="synergy-range-label" class="synergy-range-label"></span>
+          </div>
+          <div id="synergy-range" class="synergy-range">
+            <div id="synergy-range-fill" class="synergy-range-fill"></div>
+            <input type="range" id="synergy-min" min="0" max="12" value="0" step="1">
+            <input type="range" id="synergy-max" min="0" max="12" value="12" step="1">
+          </div>
+        </div>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="include-parallels-cb">
+          <span>Include parallels</span>
+        </label>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="highlight-matches-cb" checked>
+          <span>Highlight matched attributes</span>
+        </label>
+
+        <div class="control-group">
+          <label for="row-filter-select">Fusion row</label>
+          <select id="row-filter-select">
+            <option value="">Any row</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fusion-section">
+        <h2>Reach a Target</h2>
+        <div class="target-btns">
+          <button class="target-btn" data-target="20">20 &middot; 2x</button>
+          <button class="target-btn" data-target="40">40 &middot; 4x</button>
+          <button class="target-btn" data-target="100">100 &middot; 10x</button>
+        </div>
+        <div id="suggester-results" class="suggester-results">
+          <p class="placeholder-sm">Pick a target to see combinations.</p>
+        </div>
+      </div>
+    </aside>
+
+    <div id="fusion-center">
+      <div id="fusion-list-header">
+        <span id="fusion-card-count"></span>
+      </div>
+      <section id="fusion-card-list">
+        <p class="placeholder">Loading fusion data...</p>
+      </section>
+    </div>
+  </main>
+
+  <script src="../shared/parallels.js"></script>
+  <script src="../shared/shared.js"></script>
+  <script src="fusion-engine.js"></script>
+  <script src="fusion.js"></script>
+</body>
+</html>

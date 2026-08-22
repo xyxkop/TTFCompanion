@@ -13,6 +13,7 @@ const SPREADSHEET_BASE =
 
 const SHEET_CSV_URL = SPREADSHEET_BASE + '&gid=1154431008';   // Cards tab
 const SETS_CSV_URL = SPREADSHEET_BASE + '&gid=0';             // Set metadata tab
+const FUSIONS_CSV_URL = SPREADSHEET_BASE + '&gid=842880450';   // Weekly fusion tab
 
 // Set config loaded from the sets metadata sheet
 let setConfigs = {};
@@ -146,6 +147,68 @@ async function loadCards() {
   return parseCSV(await response.text());
 }
 
+/**
+ * Load weekly fusion definitions from the fusion tab.
+ * Columns (header-keyed, order-independent):
+ *   Week, Player, Club, Position, Skill Type 1, Skill Type 2, Set, License,
+ *   Row 1, Row 2, Row 3, Row 4
+ * Each "Row N" cell is "count:requirement" (e.g. "3:player", "4:skilltype=Accuracy/Control").
+ * Returns an array of fusion objects (see parseFusions).
+ */
+async function loadFusions() {
+  const response = await fetch(FUSIONS_CSV_URL + '&_t=' + Date.now());
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return parseFusions(await response.text());
+}
+
+function parseFusions(text) {
+  const lines = parseCSVLines(text);
+  if (lines.length < 2) return [];
+
+  const header = lines[0].map(col => col.trim());
+  const fusions = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i];
+    if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+
+    const entry = {};
+    for (let j = 0; j < header.length; j++) {
+      entry[header[j]] = (row[j] || '').trim();
+    }
+
+    const week = entry['Week'];
+    if (!week) continue;
+
+    const rows = [];
+    for (let r = 1; r <= 4; r++) {
+      const cell = (entry[`Row ${r}`] || '').trim();
+      if (!cell) continue; // blank row => omitted
+      // Format: "count:requirement" (split on the first colon).
+      const colonIdx = cell.indexOf(':');
+      const count = colonIdx === -1 ? (Number(cell) || 0) : (Number(cell.slice(0, colonIdx).trim()) || 0);
+      const requirement = colonIdx === -1 ? '' : cell.slice(colonIdx + 1).trim();
+      rows.push({ index: r, count, requirement });
+    }
+
+    fusions.push({
+      week,
+      attributes: {
+        player: entry['Player'] || '',
+        club: entry['Club'] || '',
+        position: entry['Position'] || '',
+        skillType1: entry['Skill Type 1'] || '',
+        skillType2: entry['Skill Type 2'] || '',
+        set: entry['Set'] || '',
+        license: entry['License'] || '',
+      },
+      rows,
+    });
+  }
+
+  return fusions;
+}
+
 function parseCSV(text) {
   const lines = parseCSVLines(text);
   if (lines.length < 2) return [];
@@ -202,11 +265,11 @@ function generateParallels(cards) {
   cards.forEach(card => {
     if (!shouldGenerateParallels(card)) return;
     const isGK = card['Position'] === 'Goalkeeper';
-    parallels.push(makeParallel(card, '\u03B1/\u03B1', isGK ? { shotblocking: 1 } : { Defence: 2 }));
-    parallels.push(makeParallel(card, '#/77', isGK ? { shotblocking: 1 } : { Attack: 2 }));
-    parallels.push(makeParallel(card, '#/66', { Energy: -1 }));
-    parallels.push(makeParallel(card, '#/44', isGK ? { shotblocking: 2 } : { swap: true }));
-    parallels.push(makeParallel(card, '#/11', isGK ? { shotblocking: 2 } : { Skill: 2 }));
+    parallels.push(makeParallel(card, Parallels.Parallel.ALPHA, isGK ? { shotblocking: 1 } : { Defence: 2 }));
+    parallels.push(makeParallel(card, Parallels.Parallel.P77, isGK ? { shotblocking: 1 } : { Attack: 2 }));
+    parallels.push(makeParallel(card, Parallels.Parallel.P66, { Energy: -1 }));
+    parallels.push(makeParallel(card, Parallels.Parallel.P44, isGK ? { shotblocking: 2 } : { swap: true }));
+    parallels.push(makeParallel(card, Parallels.Parallel.P11, isGK ? { shotblocking: 2 } : { Skill: 2 }));
   });
 
   // Omega parallels (only for the specific card listed in set metadata)
@@ -216,7 +279,7 @@ function generateParallels(cards) {
     const config = setConfigs[card['Set']];
     if (!config || !config.omegaCard) return;
     if (!config.omegaCard.has(card['Card #'])) return;
-    parallels.push(makeParallel(card, '\u03A9/\u03A9', { Attack: 2, Defence: 2, Skill: 2, Energy: -1 }));
+    parallels.push(makeParallel(card, Parallels.Parallel.OMEGA, { Attack: 2, Defence: 2, Skill: 2, Energy: -1 }));
   });
 
   return parallels;

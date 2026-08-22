@@ -32,9 +32,9 @@
       multi: ['Ability 1 Text', 'Ability 2 Text'] },
   ];
 
-  // Parallel types (used in Parallels filter section)
+  // Parallel types (used in Parallels filter section): Base + digital parallels
   const PARALLELS_DEF = { column: 'Parallel',
-    options: ['Base', '\u03B1/\u03B1', '#/77', '#/66', '#/44', '#/11', '\u03A9/\u03A9'] };
+    options: ['Base', ...Parallels.DIGITAL_ORDER] };
 
   // ============================================================
   // STATE
@@ -1180,12 +1180,12 @@
 
   const PARALLEL_TO_CODE = {
     'Base': null,
-    '\u03B1/\u03B1': '125',
-    '#/77': '77',
-    '#/66': '66',
-    '#/44': '44',
-    '#/11': '11',
-    '\u03A9/\u03A9': '1',
+    [Parallels.Parallel.ALPHA]: '125',
+    [Parallels.Parallel.P77]: '77',
+    [Parallels.Parallel.P66]: '66',
+    [Parallels.Parallel.P44]: '44',
+    [Parallels.Parallel.P11]: '11',
+    [Parallels.Parallel.OMEGA]: '1',
   };
   const CODE_TO_PARALLEL = Object.fromEntries(
     Object.entries(PARALLEL_TO_CODE).filter(([, v]) => v != null).map(([k, v]) => [v, k])

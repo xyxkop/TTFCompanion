@@ -1,0 +1,346 @@
+/* Fusion Helper page styles. Complements shared.css. */
+
+main {
+  display: flex;
+  align-items: stretch;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+
+/* Sidebar */
+#fusion-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid #e2e2e6;
+  background: #fafafb;
+  overflow-y: auto;
+  padding: 0.75rem;
+  box-sizing: border-box;
+}
+
+.fusion-week-picker { margin-bottom: 0.75rem; }
+.fusion-week-picker label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #888;
+  margin-bottom: 0.25rem;
+}
+.fusion-week-picker select,
+#row-filter-select {
+  width: 100%;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+}
+
+/* Fusion summary card */
+.fusion-summary {
+  background: #fff;
+  border: 1px solid #e2e2e6;
+  border-radius: 8px;
+  padding: 0.6rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+}
+.fusion-summary .fs-attr {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.15rem 0;
+}
+.fusion-summary .fs-attr .fs-key { color: #888; }
+.fusion-summary .fs-attr .fs-val { font-weight: 600; text-align: right; }
+.fusion-summary .fs-rows {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #eee;
+}
+.fusion-summary .fs-row {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.1rem 0;
+  color: #555;
+}
+.fusion-summary .fs-row .fs-row-count {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #2255cc;
+}
+
+.fusion-warning {
+  background: #fff4e5;
+  border: 1px solid #ffcc80;
+  color: #a65c00;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Sections */
+.fusion-section {
+  border-top: 1px solid #e8e8ec;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+.fusion-section h2 {
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem;
+}
+.control-group { margin-bottom: 0.7rem; }
+.control-group > label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #888;
+  margin-bottom: 0.3rem;
+}
+.control-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.synergy-range-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2255cc;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Dual range slider: two inputs overlaid on one shared track */
+.synergy-range { position: relative; height: 24px; margin-top: 0.15rem; }
+/* Shared visible track behind both inputs */
+.synergy-range::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 10px;
+  height: 4px;
+  background: #d8d8de;
+  border-radius: 2px;
+}
+/* Blue fill between the two thumbs (positioned via JS) */
+.synergy-range-fill {
+  position: absolute;
+  top: 10px;
+  height: 4px;
+  background: #2255cc;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.synergy-range input[type="range"] {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  background: none;
+  pointer-events: none;      /* only the thumb is interactive */
+  -webkit-appearance: none;
+  appearance: none;
+}
+.synergy-range input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: transparent; }
+.synergy-range input[type="range"]::-moz-range-track { height: 4px; background: transparent; }
+.synergy-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  pointer-events: auto;
+  margin-top: -6px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #2255cc;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+.synergy-range input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #2255cc;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 0.7rem;
+}
+.toggle-row input { margin: 0; cursor: pointer; }
+
+/* Suggester */
+.target-btns { display: flex; gap: 0.35rem; margin-bottom: 0.6rem; }
+.target-btn {
+  flex: 1;
+  padding: 0.4rem 0.2rem;
+  font-size: 0.72rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+}
+.target-btn:hover { background: #f0f4ff; }
+.target-btn.active { background: #2255cc; color: #fff; border-color: #2255cc; }
+
+.suggester-results { font-size: 0.8rem; }
+.placeholder-sm { color: #999; font-size: 0.8rem; }
+.combo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e2e2e6;
+  border-radius: 6px;
+  margin-bottom: 0.35rem;
+  background: #fff;
+}
+.combo-values { font-weight: 600; }
+.combo-val {
+  display: inline-block;
+  min-width: 1.1em;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+  background: #2255cc;
+  border-radius: 3px;
+  padding: 0 0.25rem;
+}
+.combo-sum { color: #555; }
+.combo-badge {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  color: #fff;
+}
+.combo-badge.feasible { background: #228833; }
+.combo-badge.infeasible { background: #cc6600; }
+
+/* Center panel */
+#fusion-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#fusion-list-header {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e2e2e6;
+  font-size: 0.85rem;
+  color: #555;
+}
+#fusion-card-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.6rem;
+  align-content: start;
+}
+.placeholder { color: #999; grid-column: 1 / -1; }
+
+/* Simplified fusion card: set header on top, one overlay row with
+   name / club / position / skill types laid out horizontally. */
+.fusion-card-wrap { position: relative; }
+.fcard {
+  position: relative;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.fcard .fc-synergy {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 2;
+  background: #2255cc;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+.fcard .card-parallel-badge { top: 0.35rem; right: 0.35rem; }
+/* Reset the shared .card-set negative margins (they assume .card padding). */
+.fcard .card-set {
+  margin: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+/* Vertical overlay: name / club / (position + skill types) */
+.fcard-overlay {
+  padding: 0.4rem 0.5rem;
+  margin: 0.4rem;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 6px;
+}
+.fcard-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fcard-club {
+  font-size: 0.72rem;
+  color: #555;
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fcard-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+.fcard-position {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #444;
+  background: #eee;
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+}
+/* Skill-type icons on a dark background (matches the deck view) */
+.fcard-skill {
+  width: 26px; height: 26px;
+  background: #222;
+  border-radius: 4px;
+  padding: 2px;
+  display: flex; align-items: center; justify-content: center;
+}
+.fcard-skill .skill-type-icon { width: 100%; height: 100%; object-fit: contain; }
+/* In-place highlight for matched attributes: a border (outline) on each
+   matched element. Suppressed entirely when the card has .no-highlight. */
+.fcard-name.fc-hl,
+.fcard-club.fc-hl,
+.fcard-position.fc-hl,
+.fcard-skill.fc-hl,
+.fcard-set-text.fc-hl-set {
+  outline: 2px solid #d81e5b;
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+/* The set text is inline; give it padding so the outline hugs the text. */
+.fcard-set-text.fc-hl-set { padding: 0 0.2rem; }
+#fusion-card-list.no-highlight .fc-hl,
+#fusion-card-list.no-highlight .fc-hl-set { outline: none; }

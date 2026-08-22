@@ -5,8 +5,15 @@
 (function () {
   'use strict';
 
-  const DIGITAL_PARALLELS = ['Base', '\u03B1/\u03B1', '#/77', '#/66', '#/44', '#/11', '\u03A9/\u03A9'];
-  const PHYSICAL_PARALLELS = ['/99', '/75', '/50', '/25', '/10', '/5', '/1'];
+  const { Parallel } = Parallels;
+  // Digital column list: Base + all digital parallels.
+  const DIGITAL_PARALLELS = ['Base', ...Parallels.DIGITAL_ORDER];
+  // Physical parallels currently tracked across all set types.
+  // Note: /35 and /7 exist for some sets but are not tracked universally yet.
+  const PHYSICAL_PARALLELS = [
+    Parallel.P99, Parallel.P75, Parallel.P50, Parallel.P25, Parallel.P10, Parallel.P5, Parallel.P1,
+  ];
+
   const MAX_COLLECTIONS = 3;
 
   // ============================================================
@@ -407,12 +414,12 @@
     const config = setConfigs[setName];
     const isDigital = activeCollection.type === 'digital';
 
-    if (!config) return isDigital ? ['Base'] : ['/99'];
+    if (!config) return isDigital ? ['Base'] : [Parallel.P99];
 
     if (config.parallelType === 'NO_DIGITAL' && isDigital) return ['Base'];
     if (config.parallelType === 'PARTIAL') {
       if (!config.partialParallelCards || !config.partialParallelCards.has(card['Card #'])) {
-        return isDigital ? ['Base'] : ['/99'];
+        return isDigital ? ['Base'] : [Parallel.P99];
       }
     }
 
