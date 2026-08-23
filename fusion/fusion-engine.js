@@ -108,6 +108,9 @@ export function cardVariants(card, fusion, availableParallels) {
     if (isPhysicalParallel(p)) {
       const bonus = PHYSICAL_PARALLEL_BONUS[p];
       if (bonus == null) continue; // TBD -> skip until confirmed
+      // Physical parallels have no skill types. If the card's only matches were
+      // skill types, a physical version matches nothing -> ineligible, skip it.
+      if (physical.count === 0) continue;
       variants.push({ parallel: p, matchCount: physical.count, attrSynergy: physSynergy, bonus, value: physSynergy + bonus });
     } else {
       const bonus = parallelBonus(p) || 0;

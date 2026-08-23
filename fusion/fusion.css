@@ -166,6 +166,25 @@ main {
   cursor: pointer;
 }
 
+/* Quick-select synergy value buttons */
+.synergy-quick-btns {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+.synergy-quick-btn {
+  flex: 1;
+  padding: 0.25rem 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+.synergy-quick-btn:hover { background: #f0f4ff; border-color: #2255cc; }
+
 .toggle-row {
   display: flex;
   align-items: center;
@@ -185,6 +204,7 @@ main {
   border: 1px solid #ccc;
   border-radius: 5px;
   background: #fff;
+  color: #333;
   cursor: pointer;
 }
 .target-btn:hover { background: #f0f4ff; }
@@ -294,14 +314,20 @@ main {
   font-weight: 700;
   font-size: 0.85rem;
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .fcard-club {
   font-size: 0.72rem;
   color: #555;
   margin-top: 0.1rem;
+}
+/* Inner text span carries the truncation, so the parent never clips the
+   highlight outline (which is drawn outside the span box). */
+.fcard-name > span,
+.fcard-club > span {
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+  vertical-align: bottom;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -331,16 +357,15 @@ main {
 .fcard-skill .skill-type-icon { width: 100%; height: 100%; object-fit: contain; }
 /* In-place highlight for matched attributes: a border (outline) on each
    matched element. Suppressed entirely when the card has .no-highlight. */
-.fcard-name.fc-hl,
-.fcard-club.fc-hl,
-.fcard-position.fc-hl,
-.fcard-skill.fc-hl,
+.fc-hl,
 .fcard-set-text.fc-hl-set {
   outline: 2px solid #d81e5b;
   outline-offset: 1px;
   border-radius: 3px;
 }
-/* The set text is inline; give it padding so the outline hugs the text. */
+/* Inline text highlights (name/club/set): pad slightly so the outline hugs the text. */
+.fcard-name .fc-hl,
+.fcard-club .fc-hl,
 .fcard-set-text.fc-hl-set { padding: 0 0.2rem; }
 #fusion-card-list.no-highlight .fc-hl,
 #fusion-card-list.no-highlight .fc-hl-set { outline: none; }

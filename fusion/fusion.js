@@ -9,7 +9,6 @@ import { POSITION_LABELS, SKILL_TYPE_ICONS } from '../shared/config.js';
 import { escapeHtml } from '../shared/util.js';
 import { loadSetsConfig, setConfigs, getSetColor, getSetBackground } from '../shared/sets.js';
 import { loadCards, loadFusions } from '../shared/data.js';
-import { shouldGenerateParallels } from '../shared/cards.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -55,6 +54,9 @@ const $ = (id) => document.getElementById(id);
   });
   minSlider.addEventListener('input', onSliderInput);
   maxSlider.addEventListener('input', onSliderInput);
+  document.querySelectorAll('.synergy-quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => setSynergyRange(Number(btn.dataset.value)));
+  });
   document.querySelectorAll('.target-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const target = Number(btn.dataset.target);
@@ -108,21 +110,18 @@ const $ = (id) => document.getElementById(id);
     suggesterResults.innerHTML = '<p class="placeholder-sm">Pick a target to see combinations.</p>';
   }
 
-  /** Which parallels a base card can have (digital + printable), per set config. */
+  /**
+   * Which parallels a base card can have for the fusion (digital + printable),
+   * per set config. Uses the shared set-aware helpers; #/99 is dropped since it
+   * is equivalent to Base (contributes no synergy).
+   */
   function availableParallels(card) {
-    const P = Parallels.Parallel;
-    const parallels = ['Base'];
-    if (typeof shouldGenerateParallels === 'function' && shouldGenerateParallels(card)) {
-      // Digital parallels
-      parallels.push(P.ALPHA, P.P77, P.P66, P.P44, P.P11);
-      const config = setConfigs[card['Set']];
-      if (config && config.omegaCard && config.omegaCard.has(card['Card #'])) {
-        parallels.push(P.OMEGA);
-      }
-      // Printable parallels (same eligibility as digital; #/99 == Base is excluded)
-      parallels.push.apply(parallels, E.PHYSICAL_PARALLELS);
-    }
-    return parallels;
+    const config = setConfigs[card['Set']];
+    const num = card['Card #'];
+    const digital = Parallels.digitalParallelsFor(config, num); // includes 'Base'
+    const physical = Parallels.physicalParallelsFor(config, num)
+      .filter(p => p !== Parallels.Parallel.P99);
+    return [...digital, ...physical];
   }
 
   function recomputeSynergy() {
@@ -133,21 +132,6 @@ const $ = (id) => document.getElementById(id);
       const res = E.cardVariants(card, activeFusion, parallels);
       if (res) synergyResults.push(res);
     }
-  }
-
-  /** Best (max) synergy value for a result under the current parallels toggle. */
-  function bestValue(res) {
-    let max = -Infinity;
-    for (const v of res.variants) if (v.value > max) max = v.value;
-    return max;
-  }
-  /** The variant achieving a value within [min,max], preferring the highest in-range. */
-  function inRangeVariant(res, lo, hi) {
-    let best = null;
-    for (const v of res.variants) {
-      if (v.value >= lo && v.value <= hi && (!best || v.value > best.value)) best = v;
-    }
-    return best;
   }
 
   // ---- Slider ----
@@ -174,6 +158,16 @@ const $ = (id) => document.getElementById(id);
       if (this === minSlider) { hi = lo; maxSlider.value = String(hi); }
       else { lo = hi; minSlider.value = String(lo); }
     }
+    updateRangeLabel();
+    renderFilteredCards();
+  }
+
+  /** Quick-select an exact synergy value (sets min = max = value, clamped to bounds). */
+  function setSynergyRange(value) {
+    const lo = Number(minSlider.min), hi = Number(minSlider.max);
+    const v = Math.max(lo, Math.min(value, hi));
+    minSlider.value = String(v);
+    maxSlider.value = String(v);
     updateRangeLabel();
     renderFilteredCards();
   }
@@ -224,12 +218,15 @@ const $ = (id) => document.getElementById(id);
     cardListEl.innerHTML = '';
     let shown = 0;
 
+    // One entry per in-range variant (so every parallel is shown, not just
+    // each card's highest-value variant).
     const matches = [];
     for (const res of synergyResults) {
-      const variant = inRangeVariant(res, lo, hi);
-      if (!variant) continue;
       if (rowPredicate && !rowPredicate(res.card)) continue;
-      matches.push({ res, variant });
+      for (const variant of res.variants) {
+        if (variant.value < lo || variant.value > hi) continue;
+        matches.push({ res, variant });
+      }
     }
     // Highest synergy first (Base, being lowest, sorts to the bottom).
     matches.sort((a, b) => b.variant.value - a.variant.value);
@@ -238,7 +235,7 @@ const $ = (id) => document.getElementById(id);
       shown++;
     }
 
-    cardCountEl.textContent = `${shown} card${shown === 1 ? '' : 's'} in range`;
+    cardCountEl.textContent = `${shown} result${shown === 1 ? '' : 's'} in range`;
     if (shown === 0) {
       cardListEl.innerHTML = '<p class="placeholder">No cards match the current filter.</p>';
     }
@@ -251,7 +248,13 @@ const $ = (id) => document.getElementById(id);
 
   function buildFusionCard(res, variant) {
     const c = res.card;
-    const matched = new Set(res.matched);
+    const isPhysical = E.isPhysicalParallel(variant.parallel);
+    // Physical parallels have no play styles: skill types are neither shown
+    // nor counted as matched attributes for these variants.
+    const matchedList = isPhysical
+      ? res.matched.filter(m => m !== 'skillType1' && m !== 'skillType2')
+      : res.matched;
+    const matched = new Set(matchedList);
     const fa = activeFusion.attributes;
     const wrap = document.createElement('div');
     wrap.className = 'fusion-card-wrap';
@@ -301,15 +304,19 @@ const $ = (id) => document.getElementById(id);
     const name = `${c['First Name'] || ''} ${c['Second Name'] || ''}`.trim() || '(unnamed)';
     const nameEl = document.createElement('div');
     nameEl.className = 'fcard-name';
-    nameEl.textContent = name;
     nameEl.title = name;
-    if (matched.has('player')) nameEl.classList.add('fc-hl');
+    const nameText = document.createElement('span');
+    nameText.textContent = name;
+    if (matched.has('player')) nameText.classList.add('fc-hl');
+    nameEl.appendChild(nameText);
     overlay.appendChild(nameEl);
 
     const clubEl = document.createElement('div');
     clubEl.className = 'fcard-club';
-    clubEl.textContent = c['Club'] || '';
-    if (matched.has('club')) clubEl.classList.add('fc-hl');
+    const clubText = document.createElement('span');
+    clubText.textContent = c['Club'] || '';
+    if (matched.has('club')) clubText.classList.add('fc-hl');
+    clubEl.appendChild(clubText);
     overlay.appendChild(clubEl);
 
     const bottomRow = document.createElement('div');
@@ -321,7 +328,8 @@ const $ = (id) => document.getElementById(id);
     bottomRow.appendChild(posEl);
 
     const fusionSkills = [E.normalize(fa.skillType1), E.normalize(fa.skillType2)].filter(Boolean);
-    [c['Skill Type #1'], c['Skill Type #2']].forEach(st => {
+    // Physical parallels have no skill types, so don't render them.
+    (isPhysical ? [] : [c['Skill Type #1'], c['Skill Type #2']]).forEach(st => {
       if (st) {
         const iconWrap = document.createElement('div');
         iconWrap.className = 'fcard-skill';

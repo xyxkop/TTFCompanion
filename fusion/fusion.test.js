@@ -77,6 +77,12 @@ const p50 = vPhys.variants.find(x => x.parallel === Parallel.P50);
 ok('physical variant included with known bonus', !!p50);
 eq('physical P50 value = 0 (play styles excluded) + 3', p50.value, 3);
 eq('physical P50 matchCount excludes skill types', p50.matchCount, 1);
+// skill-only card: physical variants are ineligible (no skill types) -> skipped
+const cSkillOnly = card({ 'Skill Type #1': 'Control' }); // matches only fusion skillType1 -> base count 1
+const vSkillOnly = E.cardVariants(cSkillOnly, fusion, ['Base', Parallel.P50, Parallel.P77]);
+ok('skill-only card is eligible (base)', vSkillOnly !== null);
+ok('skill-only card has NO physical variants', !vSkillOnly.variants.some(x => E.isPhysicalParallel(x.parallel)));
+ok('skill-only card keeps digital variants', vSkillOnly.variants.some(x => x.parallel === Parallel.P77));
 // P99 (#/99) is no longer a physical parallel (equivalent to Base)
 ok('P99 not a physical parallel', E.isPhysicalParallel(Parallel.P99) === false);
 // new parallels present

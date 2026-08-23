@@ -8,14 +8,9 @@ import { loadSetsConfig, setConfigs, getSetColor } from '../shared/sets.js';
 import { loadCards } from '../shared/data.js';
 import { currentUser, db, onAuthStateChange } from '../shared/firebase.js';
 
-const { Parallel } = Parallels;
-  // Digital column list: Base + all digital parallels.
-  const DIGITAL_PARALLELS = ['Base', ...Parallels.DIGITAL_ORDER];
-  // Physical parallels currently tracked across all set types.
-  // Note: /35 and /7 exist for some sets but are not tracked universally yet.
-  const PHYSICAL_PARALLELS = [
-    Parallel.P99, Parallel.P75, Parallel.P50, Parallel.P25, Parallel.P10, Parallel.P5, Parallel.P1,
-  ];
+  // Column lists per collection type (shared canonical sets).
+  const DIGITAL_PARALLELS = Parallels.DIGITAL_WITH_BASE;
+  const PHYSICAL_PARALLELS = Parallels.PHYSICAL_STANDARD;
 
   const MAX_COLLECTIONS = 3;
 
@@ -342,7 +337,7 @@ const { Parallel } = Parallels;
 
       const cardNum = card['Card #'];
       const owned = activeCollection.cards[cardNum] || [];
-      const availableParallels = getAvailableParallels(card, parallels);
+      const availableParallels = getAvailableParallels(card);
 
       const row = document.createElement('div');
       row.className = 'card-row';
@@ -412,28 +407,11 @@ const { Parallel } = Parallels;
   }
 
   /** Determine which parallels are available for a card based on set config */
-  function getAvailableParallels(card, allParallels) {
-    const setName = card['Set'];
-    const config = setConfigs[setName];
-    const isDigital = activeCollection.type === 'digital';
-
-    if (!config) return isDigital ? ['Base'] : [Parallel.P99];
-
-    if (config.parallelType === 'NO_DIGITAL' && isDigital) return ['Base'];
-    if (config.parallelType === 'PARTIAL') {
-      if (!config.partialParallelCards || !config.partialParallelCards.has(card['Card #'])) {
-        return isDigital ? ['Base'] : [Parallel.P99];
-      }
-    }
-
-    // Check omega eligibility (digital only)
-    if (isDigital) {
-      const hasOmega = config.omegaCard && config.omegaCard.has(card['Card #']);
-      if (hasOmega) return allParallels;
-      return allParallels.filter(p => p !== '\u03A9/\u03A9');
-    }
-
-    return allParallels;
+  function getAvailableParallels(card) {
+    const config = setConfigs[card['Set']];
+    return activeCollection.type === 'digital'
+      ? Parallels.digitalParallelsFor(config, card['Card #'])
+      : Parallels.physicalParallelsFor(config, card['Card #']);
   }
 
   // ============================================================
@@ -785,7 +763,7 @@ const { Parallel } = Parallels;
       if (card['Parallel'] && card['Parallel'] !== 'Base') return;
       if (!cardMatchesWantList(card, activeWantList)) return;
 
-      const available = getAvailableParallels(card, allParallels);
+      const available = getAvailableParallels(card);
       const cardOwned = activeCollection.cards[card['Card #']] || [];
 
       targetParallels.forEach(p => {

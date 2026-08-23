@@ -5,10 +5,28 @@
 import { SHEET_CSV_URL, FUSIONS_CSV_URL } from './config.js';
 import { parseCSVLines } from './csv.js';
 
+/**
+ * Fetch text with a few retries. The published Google Sheet endpoints 307-redirect
+ * to googleusercontent.com and can transiently drop a request when several fire at
+ * once (loadAll fetches 3 in parallel), surfacing as "Failed to fetch".
+ */
+async function fetchText(url, attempts = 3) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.text();
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 300 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 export async function loadCards() {
-  const response = await fetch(SHEET_CSV_URL + '&_t=' + Date.now());
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return parseCSV(await response.text());
+  return parseCSV(await fetchText(SHEET_CSV_URL + '&_t=' + Date.now()));
 }
 
 function parseCSV(text) {
@@ -40,9 +58,7 @@ function parseCSV(text) {
  * Each "Row N" cell is "count:requirement" (e.g. "3:player", "4:skilltype=Accuracy/Control").
  */
 export async function loadFusions() {
-  const response = await fetch(FUSIONS_CSV_URL + '&_t=' + Date.now());
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return parseFusions(await response.text());
+  return parseFusions(await fetchText(FUSIONS_CSV_URL + '&_t=' + Date.now()));
 }
 
 function parseFusions(text) {
