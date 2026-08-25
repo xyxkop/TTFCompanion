@@ -54,8 +54,14 @@ const $ = (id) => document.getElementById(id);
   });
   minSlider.addEventListener('input', onSliderInput);
   maxSlider.addEventListener('input', onSliderInput);
-  document.querySelectorAll('.synergy-quick-btn').forEach(btn => {
+  document.querySelectorAll('.synergy-quick-btn[data-value]').forEach(btn => {
     btn.addEventListener('click', () => setSynergyRange(Number(btn.dataset.value)));
+  });
+  $('synergy-all-btn').addEventListener('click', () => {
+    minSlider.value = minSlider.min;
+    maxSlider.value = maxSlider.max;
+    updateRangeLabel();
+    renderFilteredCards();
   });
   document.querySelectorAll('.target-btn').forEach(btn => {
     btn.addEventListener('click', () => {

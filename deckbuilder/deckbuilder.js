@@ -23,8 +23,7 @@ import {
   // ============================================================
 
   const FILTERS = [
-    { column: 'License', type: 'pills', group: 'Set', options: null },
-    { column: 'SetLicense', type: 'multiselect', searchable: true, group: 'Set', label: 'Set', options: null },
+    { column: 'SetLicense', type: 'multiselect', searchable: true, group: 'Set', label: '', options: null },
     { column: 'First Name', type: 'text', label: 'Player Name', group: 'Player Info',
       multi: ['First Name', 'Second Name'] },
     { column: 'Club', type: 'multiselect', searchable: true, group: 'Player Info', options: null },
@@ -276,7 +275,7 @@ import {
       });
 
       section.appendChild(content);
-      if (groupName === 'Abilities' || groupName === 'Stats') section.classList.add('collapsed');
+      if (groupName === 'Abilities') section.classList.add('collapsed');
       filtersContainer.appendChild(section);
     });
   }
@@ -285,9 +284,12 @@ import {
   function buildFilterControl(def) {
     const group = document.createElement('div');
     group.className = 'filter-group';
+    // Compare (stat) filters lay out inline: label + operator + number on one line.
+    if (def.type === 'compare') group.classList.add('filter-group-compare');
 
-    // Skip label for parallels-toggle (the checkbox has its own label)
-    if (def.type !== 'parallels-toggle') {
+    // Skip the label for parallels-toggle (has its own) and when label is
+    // explicitly empty (e.g. the sole filter in a group whose header suffices).
+    if (def.type !== 'parallels-toggle' && def.label !== '') {
       const label = document.createElement('label');
       label.textContent = def.label || def.column;
       group.appendChild(label);
@@ -488,7 +490,7 @@ import {
     const opSelect = document.createElement('select');
     opSelect.dataset.column = def.column;
     opSelect.dataset.filterType = 'compare-op';
-    ['', '=', '>=', '<='].forEach(op => opSelect.appendChild(new Option(op || 'Any', op)));
+    ['>=', '=', '<='].forEach(op => opSelect.appendChild(new Option(op, op)));
     opSelect.addEventListener('change', onCompareChange);
 
     const numInput = document.createElement('input');
@@ -528,7 +530,7 @@ import {
       item.type = 'button';
       item.className = 'tristate-item';
       item.dataset.value = val;
-      item.dataset.state = 'include';
+      item.dataset.state = 'none';
       item.textContent = val;
       item.addEventListener('click', () => {
         item.dataset.state = item.dataset.state === 'include' ? 'none' : 'include';
@@ -537,10 +539,10 @@ import {
       pillsDiv.appendChild(item);
     });
 
-    // Reset button: re-select all parallels
+    // Reset button: clear all parallel selections (none chosen = nothing filtered)
     header.querySelector('.filter-section-reset').addEventListener('click', (e) => {
       e.stopPropagation();
-      pillsDiv.querySelectorAll('.tristate-item').forEach(i => { i.dataset.state = 'include'; });
+      pillsDiv.querySelectorAll('.tristate-item').forEach(i => { i.dataset.state = 'none'; });
       onParallelsChange(pillsDiv);
     });
 
@@ -548,8 +550,7 @@ import {
     section.appendChild(content);
     filtersContainer.appendChild(section);
 
-    // Set initial filter state (all selected)
-    activeFilters['Parallel'] = { type: 'multiselect', values: [...PARALLELS_DEF.options] };
+    // Default: none chosen -> no parallel filter applied (all parallels shown).
   }
 
   /**
@@ -985,7 +986,11 @@ import {
 
   function clearAllFilters() {
     activeFilters = {};
-    filtersContainer.querySelectorAll('select').forEach(el => el.value = '');
+    filtersContainer.querySelectorAll('select').forEach(el => {
+      // Compare-op selects have no empty option; reset to their first option (=).
+      if (el.dataset.filterType === 'compare-op') el.selectedIndex = 0;
+      else el.value = '';
+    });
     filtersContainer.querySelectorAll('input').forEach(el => {
       if (el.type === 'checkbox') el.checked = false;
       else el.value = '';
@@ -1005,7 +1010,10 @@ import {
     });
 
     // Reset UI elements within this section
-    section.querySelectorAll('select').forEach(el => el.value = '');
+    section.querySelectorAll('select').forEach(el => {
+      if (el.dataset.filterType === 'compare-op') el.selectedIndex = 0;
+      else el.value = '';
+    });
     section.querySelectorAll('input').forEach(el => {
       if (el.type === 'checkbox') el.checked = false;
       else el.value = '';

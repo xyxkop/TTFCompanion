@@ -337,8 +337,8 @@ main {
 .filter-group label {
   display: block;
   font-size: 0.75rem;
-  color: var(--text);
-  font-weight: 600;
+  color: var(--text-muted);
+  font-weight: 400;
   margin-bottom: 0.2rem;
   letter-spacing: 0.3px;
 }
@@ -369,6 +369,21 @@ main {
   align-items: center;
   gap: 0.3rem;
 }
+
+/* Inline stat filter: [label] [op] [#] on one line */
+.filter-group-compare {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.filter-group-compare label {
+  margin-bottom: 0;
+  width: 62px;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+}
+.filter-group-compare .compare-inputs { flex: 0 0 auto; }
+.filter-group-compare .compare-inputs input[type="number"] { width: 56px; }
 
 .filter-group .compare-inputs {
   display: flex;
@@ -410,7 +425,8 @@ main {
   border: 1px solid #ccc;
   border-radius: 4px;
   background: #fff;
-  color: #333;
+  color: var(--text);
+  font-weight: 400;
   font-size: 0.85rem;
   text-align: left;
   cursor: pointer;
@@ -446,8 +462,9 @@ main {
   gap: 0.5rem;
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
+  font-weight: 400;
   cursor: pointer;
-  color: #333;
+  color: var(--text);
 }
 
 .multiselect-option:hover {
@@ -510,6 +527,7 @@ main {
   background: #f9f9f9;
   color: var(--text);
   font-size: 0.75rem;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -517,35 +535,38 @@ main {
   border-color: #e94560;
 }
 
+/* Selection is shown by the tinted background + colored border; text stays black. */
 .tristate-item[data-state="include"] {
   background: #e6f4ea;
   border-color: #34a853;
-  color: #1e7e34;
+  color: var(--text);
 }
 
 .tristate-item[data-state="exclude"] {
   background: #fde8e8;
   border-color: #e94560;
-  color: #c0392b;
-}
-
-#filter-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.5rem 1rem;
-  border-top: 1px solid #eee;
-  flex-shrink: 0;
-}
-
-#filter-actions button {
-  font-size: 0.75rem;
+  color: var(--text);
 }
 
 #clear-filters-btn {
-  background: #ccc;
-  color: #333;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
+#clear-filters-btn:hover {
+  opacity: 1;
+  color: var(--danger);
+  border-color: var(--danger);
+  background: transparent;
+}
+#clear-filters-btn span { font-size: 0.9rem; line-height: 1; }
 
 /* ============================================================
    CARD LIST & CARD COMPONENTS
@@ -803,19 +824,26 @@ main {
 }
 
 #clear-deck-btn {
-  background: none;
-  border: 1px solid #ddd;
-  color: #888;
-  font-size: 0.7rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   padding: 0.2rem 0.5rem;
-  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
   cursor: pointer;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 #clear-deck-btn:hover {
-  color: #e94560;
-  border-color: #e94560;
+  opacity: 1;
+  color: var(--danger);
+  border-color: var(--danger);
+  background: transparent;
 }
+#clear-deck-btn span { font-size: 0.9rem; line-height: 1; }
 
 #deck-count {
   font-size: 0.8rem;
