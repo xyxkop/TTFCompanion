@@ -21,20 +21,22 @@ body {
    HEADER
    ============================================================ */
 header {
-  background: #fff;
+  background: var(--surface);
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 
 header h1 {
-  font-size: 1.4rem;
-  color: #2255cc;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--accent);
 }
 
 #header-right {
@@ -335,9 +337,10 @@ main {
 .filter-group label {
   display: block;
   font-size: 0.75rem;
-  color: #888;
+  color: var(--text);
+  font-weight: 600;
   margin-bottom: 0.2rem;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .filter-group select,
@@ -505,7 +508,7 @@ main {
   border: 1px solid #ccc;
   border-radius: 4px;
   background: #f9f9f9;
-  color: #888;
+  color: var(--text);
   font-size: 0.75rem;
   cursor: pointer;
 }

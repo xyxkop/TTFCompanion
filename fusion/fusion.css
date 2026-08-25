@@ -1,9 +1,30 @@
 /* Fusion Helper page styles. Complements shared.css. */
 
+body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  background: var(--surface);
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
+
 main {
   display: flex;
   align-items: stretch;
-  height: calc(100vh - 56px);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 

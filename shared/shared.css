@@ -1,42 +1,141 @@
 /* TTF Companion - Shared Styles */
 
+/* ============================================================
+   DESIGN TOKENS
+   One accent, a small neutral scale, consistent spacing / radius,
+   and layered soft shadows. Use var(--token) everywhere.
+   ============================================================ */
+:root {
+  /* Surfaces & neutrals */
+  --bg: #eef0f4;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --surface-3: #eef1f5;
+  --border: #e5e7eb;
+  --border-strong: #d3d7de;
+
+  /* Text */
+  --text: #1f2733;
+  --text-muted: #626b78;
+  --text-faint: #9aa2ae;
+
+  /* Brand accent (interactive) + a distinct badge color for parallels */
+  --accent: #2f6fed;
+  --accent-hover: #1f55c8;
+  --accent-soft: #e9f0fe;
+  --badge: #e94560;
+
+  /* Semantic status colors */
+  --danger: #d64545;
+  --success: #1f9d55;
+
+  /* Radius scale */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+
+  /* Layered soft shadows */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow-md: 0 4px 10px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.16);
+
+  /* Focus ring */
+  --ring: 0 0 0 3px rgba(47, 111, 237, 0.30);
+
+  /* Typography */
+  --font: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --transition: 0.15s ease;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f5f5f7;
-  color: #333;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  line-height: 1.45;
 }
 
 button {
-  padding: 0.4rem 0.8rem;
+  padding: 0.45rem 0.9rem;
   border: none;
-  border-radius: 4px;
-  background: #e94560;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
   color: #fff;
   cursor: pointer;
+  font-family: inherit;
   font-size: 0.8rem;
+  font-weight: 600;
   white-space: nowrap;
+  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
 }
-button:hover { opacity: 0.85; }
-button:active { transform: scale(0.97); }
+button:hover { opacity: 0.9; }
+button:active { transform: translateY(1px); }
+
+/* Visible keyboard focus for all interactive controls */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+/* Consistent form controls */
+input[type="text"], input[type="search"], input[type="number"], select {
+  font-family: inherit;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+input[type="text"]:focus, input[type="search"]:focus,
+input[type="number"]:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
 
 .clickable { cursor: pointer; }
 .clickable:hover { text-decoration: underline; }
 
+/* Refined scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: #b9bec7; background-clip: content-box; }
+
 /* Card styles */
 .card {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
 }
-.card:hover { border-color: #e94560; box-shadow: 0 2px 8px rgba(233,69,96,0.12); }
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
 .card-unavailable { opacity: 0.4; pointer-events: none; cursor: default; }
 .card-unavailable .clickable { pointer-events: auto; }
 
