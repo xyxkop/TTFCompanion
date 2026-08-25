@@ -196,6 +196,7 @@ import {
   function populateFilterOptions(cards) {
     const POSITION_ORDER = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'];
     const POSITION_LABEL_MAP = { Goalkeeper: 'GK', Defender: 'DEF', Midfielder: 'MID', Forward: 'FWD' };
+    const SKILL_TYPE_ORDER = ['Speed', 'Accuracy', 'Control', 'Strength', 'Leadership'];
 
     FILTERS.forEach(def => {
       if (def.options !== null) return;
@@ -229,6 +230,12 @@ import {
       if (def.column === 'Position') {
         def.options = POSITION_ORDER.filter(p => values.has(p));
         def.labels = def.options.map(p => POSITION_LABEL_MAP[p] || p);
+      }
+
+      // Skill Type: preserve game order (Speed first) instead of alphabetical
+      if (def.column === 'Skill Type #1') {
+        def.options = SKILL_TYPE_ORDER.filter(t => values.has(t))
+          .concat([...values].filter(t => !SKILL_TYPE_ORDER.includes(t)).sort());
       }
     });
   }
