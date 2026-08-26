@@ -253,6 +253,8 @@ import { currentUser, db, onAuthStateChange } from '../shared/firebase.js';
       bulkOwnBtn.style.display = isPhysical ? 'none' : '';
       document.getElementById('want-list-section').style.display = isPhysical ? '' : 'none';
       document.getElementById('highlight-wishlist-toggle').classList.toggle('hidden', !isPhysical);
+      // Reset the search bar (a prior wishlist selection may have hidden it).
+      document.getElementById('search-filters').style.display = '';
 
       populateSetFilter();
       populateWantListSelect();
