@@ -24,6 +24,7 @@ export const Parallel = Object.freeze({
   OMEGA: '\u03A9/\u03A9',
   P99: '#/99',
   P75: '#/75',
+  P60: '#/60',
   P50: '#/50',
   P35: '#/35',
   P25: '#/25',
@@ -41,7 +42,7 @@ export const DIGITAL_ORDER = Object.freeze([
   Parallel.ALPHA, Parallel.P77, Parallel.P66, Parallel.P44, Parallel.P11, Parallel.OMEGA,
 ]);
 export const PHYSICAL_ORDER = Object.freeze([
-  Parallel.P99, Parallel.P75, Parallel.P50, Parallel.P35, Parallel.P25,
+  Parallel.P99, Parallel.P75, Parallel.P60, Parallel.P50, Parallel.P35, Parallel.P25,
   Parallel.P10, Parallel.P7, Parallel.P5, Parallel.P1,
 ]);
 
@@ -49,8 +50,8 @@ export const PHYSICAL_ORDER = Object.freeze([
 export const DIGITAL_WITH_BASE = Object.freeze([BASE, ...DIGITAL_ORDER]);
 
 // Printable parallels that current sets actually issue (standard numbering).
-// /35 and /7 exist in PHYSICAL_ORDER but no current set issues them; if a set
-// ever does, that needs a signal in the set metadata.
+// /60, /35 and /7 exist in PHYSICAL_ORDER but no current set issues them; if a
+// set ever does, that needs a signal in the set metadata.
 export const PHYSICAL_STANDARD = Object.freeze([
   Parallel.P99, Parallel.P75, Parallel.P50, Parallel.P25, Parallel.P10, Parallel.P5, Parallel.P1,
 ]);
