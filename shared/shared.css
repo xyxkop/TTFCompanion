@@ -25,6 +25,15 @@
   --accent-soft: #e9f0fe;
   --badge: #e94560;
 
+  /* Skill stat color (brighter yellow, distinct from the energy gold) */
+  --skill-bg: #f4c20d;
+
+  /* Bright green used to indicate a boosted card part */
+  --boost-green: #2ecc71;
+  /* Brighter green for boosted number text (paired with a white glow so it
+     stays legible on any background, including the green shotblock badge) */
+  --boost-green-text: #3bff7a;
+
   /* Semantic status colors */
   --danger: #d64545;
   --success: #1f9d55;
@@ -188,7 +197,7 @@ input[type="number"]:focus, select:focus {
   gap: 0.1rem; width: 40px; height: 22px; border-radius: 3px;
 }
 .stat-defence { background: #2a6db5; color: #fff; }
-.stat-skill { background: #b8860b; color: #fff; }
+.stat-skill { background: var(--skill-bg); color: #fff; }
 .stat-attack { background: #c0392b; color: #fff; }
 
 .card-position {
@@ -251,7 +260,7 @@ input[type="number"]:focus, select:focus {
 .deck-stats-compact { display: flex; gap: 2px; }
 .deck-stats-compact span { font-weight: 700; font-size: 0.7rem; min-width: 14px; text-align: center; padding: 1px 3px; border-radius: 2px; color: #fff; }
 .ds-def { background: #2a6db5; }
-.ds-skl { background: #b8860b; }
+.ds-skl { background: var(--skill-bg); }
 .ds-atk { background: #c0392b; }
 .deck-parallel { font-size: 0.6rem; font-weight: 700; color: #e94560; white-space: nowrap; margin-left: auto; }
 

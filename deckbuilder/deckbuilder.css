@@ -730,7 +730,7 @@ main {
 }
 
 .stat-skill {
-  background: #b8860b;
+  background: var(--skill-bg);
   color: #fff;
 }
 
@@ -892,6 +892,7 @@ main {
 }
 
 .deck-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -1001,16 +1002,204 @@ main {
 }
 
 .ds-def { background: #2a6db5; color: #fff; }
-.ds-skl { background: #b8860b; color: #fff; }
+.ds-skl { background: var(--skill-bg); color: #fff; }
 .ds-atk { background: #c0392b; color: #fff; }
+.ds-shotblock {
+  background: #228833;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.7rem;
+  min-width: 14px;
+  text-align: center;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-left: 2px;
+}
 
+/* Parallel badge: pinned to the top-right corner of the card row so it no
+   longer competes for inline space with the warning icon and boost chip. */
 .deck-parallel {
+  position: absolute;
+  top: 0;
+  right: 0;
   font-size: 0.6rem;
   font-weight: 700;
-  color: #e94560;
+  line-height: 1;
+  color: #fff;
+  background: #e94560;
+  padding: 2px 5px;
+  border-radius: 0 4px 0 6px;
   white-space: nowrap;
-  margin-left: auto;
+  pointer-events: none;
 }
+
+/* Boosted card parts are highlighted in bright green.
+   Numbers turn green + bold; only the (text-less) skill-type icon gets a ring. */
+.deck-st-icon.boost-added,
+.skill-type-icon.boost-added { outline: 2px solid var(--boost-green); border-radius: 3px; }
+
+/* Bright green + bold number wherever a stat was boosted (deck row + preview).
+   A white glow keeps it legible on any background, including the green
+   shotblock badge. */
+.deck-energy.boost-changed,
+.deck-stats-compact span.boost-changed,
+.ds-shotblock.boost-changed,
+.card-stats-col .stat.boost-changed,
+.card-info-col .stat.boost-changed,
+.card-ability .boost-changed {
+  color: var(--boost-green-text);
+  font-weight: 800;
+  text-shadow: 0 0 2px #fff, 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+/* Per-row boost chip: dotted outline + up-arrow when empty; tier-colored when set */
+.deck-boost-chip {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: 0.3rem;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 5px;
+  background: rgba(255,255,255,0.85);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.deck-boost-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Applied boost chip: border = tier (rarity), background = kind (type). */
+.deck-boost-chip.has-boost {
+  border-style: solid;
+  border-width: 2px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.6rem;
+  white-space: nowrap;
+  padding: 0 0.25rem;
+}
+/* Border = tier (chip + picker badge share these) */
+.deck-boost-chip.has-boost.boost-tier-bronze,
+.boost-badge.boost-tier-bronze { border-color: #a97142; }
+.deck-boost-chip.has-boost.boost-tier-silver,
+.boost-badge.boost-tier-silver { border-color: #c3c9d4; }
+.deck-boost-chip.has-boost.boost-tier-gold,
+.boost-badge.boost-tier-gold   { border-color: #e6c34a; }
+/* Background = kind (generic; used by the chip and the picker badge) */
+.boost-kind-attack    { background: #c0392b; }
+.boost-kind-defence   { background: #2a6db5; }
+.boost-kind-skill     { background: var(--skill-bg); }
+.boost-kind-energy    { background: #b8860b; }
+.boost-kind-shotblock { background: #228833; }
+.boost-kind-flip      { background: #7b3fb5; }
+.boost-kind-skilltype { background: #2b2f36; }
+.deck-boost-chip.boost-kind-skilltype { padding: 0 1px; }
+.boost-chip-icon { width: 15px; height: 15px; object-fit: contain; display: block; }
+
+/* Boost badge (used inside picker options; mirrors the deck chip look) */
+.boost-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 0.3rem;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+
+/* Picker option code swatch mirrors the kind background. */
+.boost-picker .boost-tier-bronze .boost-opt-code,
+.boost-tier-bronze .boost-opt-code { background: #a97142; }
+.boost-tier-silver .boost-opt-code { background: #8a94a6; }
+.boost-tier-gold .boost-opt-code   { background: #c8a020; }
+
+/* Enable-boosts toggle */
+#boost-enable-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0.5rem 0;
+  cursor: pointer;
+}
+#boost-enable-toggle input { margin: 0; cursor: pointer; }
+
+/* Boost picker modal (uses shared .share-modal-overlay / .share-modal) */
+.boost-modal { max-width: 420px; }
+.boost-modal .boost-option-none {
+  display: block;
+  width: 100%;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+.boost-modal .boost-option-none:hover { border-color: var(--accent); }
+.boost-modal .boost-option-none.selected { background: var(--accent-soft); border-color: var(--accent); }
+
+.boost-tier-section { margin-top: 0.6rem; }
+.boost-tier-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.3rem;
+}
+.boost-tier-title-bronze { color: #a97142; }
+.boost-tier-title-silver { color: #6b7787; }
+.boost-tier-title-gold   { color: #b8901a; }
+
+.boost-tier-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+.boost-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+}
+.boost-option:hover { border-color: var(--accent); background: var(--surface-2); }
+.boost-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+.boost-opt-code {
+  flex-shrink: 0;
+  min-width: 26px;
+  text-align: center;
+  padding: 0.1rem 0.25rem;
+  border-radius: 3px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+.boost-close-btn { margin-top: 0.75rem; }
 
 #deck-actions {
   display: flex;

@@ -60,9 +60,21 @@ function makeParallel(card, parallelName, mods) {
   return p;
 }
 
-function boostShotblocking(text, amount) {
+/** Increase the "Defence +N" value in a Shotblocking ability text by `amount`. */
+export function boostShotblocking(text, amount) {
   if (!text) return text;
   return text.replace(/Defence \+(\d+)/i, (_, n) => `Defence +${Number(n) + amount}`);
+}
+
+/**
+ * A goalkeeper's shotblocking value, parsed from its "Shotblocking" ability
+ * text ("Defence +N"). Returns null for non-GK cards or when not present.
+ */
+export function getShotblocking(card) {
+  if ((card['Position'] || '') !== 'Goalkeeper') return null;
+  if ((card['Ability 1 Title'] || '') !== 'Shotblocking') return null;
+  const m = String(card['Ability 1 Text'] || '').match(/\+(\d+)/);
+  return m ? Number(m[1]) : null;
 }
 
 // ============================================================
@@ -77,11 +89,23 @@ export function buildStat(type, text) {
   return el;
 }
 
-/** Append an ability block (title + optional text) to a container. */
-export function appendAbility(container, title, text) {
+/**
+ * Append an ability block (title + optional text) to a container.
+ * When `opts.highlightBoost` is set, any "+N" in the text is wrapped in a
+ * green boost span (used to show a boosted shotblocking value).
+ */
+export function appendAbility(container, title, text, opts = {}) {
   if (!title || title === 'N/A') return;
   const el = document.createElement('div');
   el.className = 'card-ability';
-  el.innerHTML = `<strong>${escapeHtml(title)}</strong>${text && text !== 'N/A' ? '<br><span>' + escapeHtml(text) + '</span>' : ''}`;
+  let body = '';
+  if (text && text !== 'N/A') {
+    let safe = escapeHtml(text);
+    if (opts.highlightBoost) {
+      safe = safe.replace(/\+\d+/, m => `<span class="boost-changed">${m}</span>`);
+    }
+    body = '<br><span>' + safe + '</span>';
+  }
+  el.innerHTML = `<strong>${escapeHtml(title)}</strong>${body}`;
   container.appendChild(el);
 }

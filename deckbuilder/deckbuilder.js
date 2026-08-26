@@ -10,7 +10,13 @@ import {
   loadSetsConfig, setConfigs, isSetPlayable, getSetColor, getSetBackground, getCardNumberColor,
 } from '../shared/sets.js';
 import { loadCards } from '../shared/data.js';
-import { generateParallels, shouldGenerateParallels, buildStat, appendAbility } from '../shared/cards.js';
+import {
+  generateParallels, shouldGenerateParallels, buildStat, appendAbility,
+  boostShotblocking, getShotblocking,
+} from '../shared/cards.js';
+import {
+  BOOSTS, CODE_TO_BOOST, boostCode, isBoostEligible, eligibleBoosts,
+} from '../shared/boosts.js';
 import {
   currentUser, onAuthStateChange, loadUserCollections,
   loadSavedDecks, loadSavedDecksFromCache, saveDeckToFirestore, deleteDeckFromFirestore,
@@ -58,6 +64,8 @@ import {
   let savedScrollPosition = 0;
   let deck = []; // Array of card objects in the deck (max 20, exactly 1 GK)
   let deckCardNums = new Set(); // Card numbers currently in deck (for fast lookup)
+  let deckBoosts = {}; // { cardNum: boostId } — one boost per deck card
+  let boostsEnabled = false; // when on, deck rows show the boost chip
   let loadedDeckId = null; // ID of currently loaded saved deck (for overwrite)
   let loadedDeckName = ''; // Name of currently loaded saved deck
   let savedDecksList = []; // Cached list of user's saved decks
@@ -123,6 +131,22 @@ import {
   sortDirBtn.addEventListener('click', toggleSortDir);
   clearFiltersBtn.addEventListener('click', clearAllFilters);
   clearDeckBtn.addEventListener('click', clearDeck);
+  $('enable-boosts').addEventListener('change', (e) => {
+    if (e.target.checked) {
+      boostsEnabled = true;
+    } else {
+      // Disabling clears all boosts — confirm if any are active.
+      const active = Object.keys(deckBoosts).length;
+      if (active > 0 && !confirm(`Disabling boosts will clear ${active} active boost${active === 1 ? '' : 's'}. Continue?`)) {
+        e.target.checked = true; // revert; keep boosts
+        return;
+      }
+      boostsEnabled = false;
+      deckBoosts = {};
+    }
+    renderDeck();
+    saveSessionState();
+  });
   shareDeckBtn.addEventListener('click', shareDeck);
   importDeckBtn.addEventListener('click', showImportModal);
   saveDeckBtn.addEventListener('click', showSaveDeckModal);
@@ -1143,12 +1167,15 @@ import {
     const bottomEl = document.createElement('div');
     bottomEl.className = 'card-bottom';
 
+    const changed = card._boostChanged || {};
+    const markBoost = (el, on) => { if (on) el.classList.add('boost-changed'); return el; };
+
     // Left column: Defence, Skill, Attack (stacked vertically)
     const statsCol = document.createElement('div');
     statsCol.className = 'card-stats-col';
-    statsCol.appendChild(buildStat('defence', card['Defence'] || '0'));
-    statsCol.appendChild(buildStat('skill', card['Skill'] || '0'));
-    statsCol.appendChild(buildStat('attack', card['Attack'] || '0'));
+    statsCol.appendChild(markBoost(buildStat('defence', card['Defence'] || '0'), changed.Defence));
+    statsCol.appendChild(markBoost(buildStat('skill', card['Skill'] || '0'), changed.Skill));
+    statsCol.appendChild(markBoost(buildStat('attack', card['Attack'] || '0'), changed.Attack));
     bottomEl.appendChild(statsCol);
 
     // Middle column: Position, Energy, Skill Types (stacked vertically)
@@ -1160,17 +1187,19 @@ import {
     posEl.textContent = POSITION_LABELS[card['Position']] || card['Position'];
     infoCol.appendChild(posEl);
 
-    const energyEl = buildStat('energy', `\u26A1 ${card['Energy'] || '0'}`);
+    const energyEl = markBoost(buildStat('energy', `\u26A1 ${card['Energy'] || '0'}`), changed.Energy);
     infoCol.appendChild(energyEl);
 
     const skillTypesEl = document.createElement('div');
     skillTypesEl.className = 'card-skill-types';
-    [card['Skill Type #1'], card['Skill Type #2']].forEach(st => {
+    [card['Skill Type #1'], card['Skill Type #2'], card['Skill Type #3']].forEach(st => {
       if (st) {
         const icon = document.createElement('img');
         icon.className = 'skill-type-icon';
         icon.src = SKILL_TYPE_ICONS[st] || '';
         icon.alt = st;
+        // Green border on a boost-added skill type.
+        if (st === card['Skill Type #3'] && changed.skillType3) icon.classList.add('boost-added');
         skillTypesEl.appendChild(icon);
       }
     });
@@ -1180,7 +1209,7 @@ import {
     // Right column: Abilities
     const abilitiesEl = document.createElement('div');
     abilitiesEl.className = 'card-abilities';
-    appendAbility(abilitiesEl, card['Ability 1 Title'], card['Ability 1 Text']);
+    appendAbility(abilitiesEl, card['Ability 1 Title'], card['Ability 1 Text'], { highlightBoost: changed.shotblock });
     appendAbility(abilitiesEl, card['Ability 2 Title'], card['Ability 2 Text']);
     bottomEl.appendChild(abilitiesEl);
 
@@ -1220,28 +1249,38 @@ import {
   /** Encode the current deck into a compact base64 string */
   function encodeDeck() {
     if (deck.length === 0) return '';
-    // Format: "cardNum" for base, "cardNum.parallelCode" for parallels
+    // Format per entry: "cardNum[.parallelCode][.b<boostCode>]".
+    // The parallel segment is numeric; the boost segment is prefixed with 'b'.
     const entries = deck.map(card => {
       const num = card['Card #'] || '0';
-      const code = PARALLEL_TO_CODE[card['Parallel'] || 'Base'];
-      return code ? `${num}.${code}` : num;
+      let s = num;
+      const pcode = PARALLEL_TO_CODE[card['Parallel'] || 'Base'];
+      if (pcode) s += `.${pcode}`;
+      const bcode = boostCode(deckBoosts[num]);
+      if (bcode) s += `.b${bcode}`;
+      return s;
     });
     return btoa(entries.join(','));
   }
 
-  /** Decode a base64 deck string into an array of { cardNum, parallel } */
+  /** Decode a base64 deck string into [{ cardNum, parallel, boostId }] */
   function decodeDeck(encoded) {
     try {
       const str = atob(encoded);
       return str.split(',').map(entry => {
-        const dotIdx = entry.indexOf('.');
-        if (dotIdx === -1) {
-          return { cardNum: entry, parallel: 'Base' };
+        const segs = entry.split('.');
+        const cardNum = segs[0];
+        let parallel = 'Base';
+        let boostId = null;
+        for (let i = 1; i < segs.length; i++) {
+          const seg = segs[i];
+          if (seg[0] === 'b') {
+            boostId = CODE_TO_BOOST[seg.slice(1)] || null; // unknown code -> no boost
+          } else {
+            parallel = CODE_TO_PARALLEL[seg] || 'Base';
+          }
         }
-        const cardNum = entry.slice(0, dotIdx);
-        const code = entry.slice(dotIdx + 1);
-        const parallel = CODE_TO_PARALLEL[code] || 'Base';
-        return { cardNum, parallel };
+        return { cardNum, parallel, boostId };
       });
     } catch (e) {
       console.error('Failed to decode deck:', e);
@@ -1772,16 +1811,14 @@ import {
     }
 
     if (pool.skillTypes) {
-      const st1 = card['Skill Type #1'] || '';
-      const st2 = card['Skill Type #2'] || '';
+      const sts = [card['Skill Type #1'], card['Skill Type #2'], card['Skill Type #3']].filter(Boolean);
       if (pool.skillTypes.i && pool.skillTypes.i.length > 0) {
-        if (!pool.skillTypes.i.includes(st1) && !pool.skillTypes.i.includes(st2)) {
-          msgs.push(`Skill type ${st1}${st2 ? '/' + st2 : ''} not allowed`);
+        if (!sts.some(st => pool.skillTypes.i.includes(st))) {
+          msgs.push(`Skill type ${sts.join('/')} not allowed`);
         }
       }
       if (pool.skillTypes.x && pool.skillTypes.x.length > 0) {
-        if (pool.skillTypes.x.includes(st1)) msgs.push(`Skill type ${st1} not allowed`);
-        if (pool.skillTypes.x.includes(st2)) msgs.push(`Skill type ${st2} not allowed`);
+        sts.forEach(st => { if (pool.skillTypes.x.includes(st)) msgs.push(`Skill type ${st} not allowed`); });
       }
     }
 
@@ -1825,9 +1862,8 @@ import {
         return values.includes(setLicense);
       }
       case 't': {
-        const st1 = card['Skill Type #1'] || '';
-        const st2 = card['Skill Type #2'] || '';
-        return values.includes(st1) || values.includes(st2);
+        const sts = [card['Skill Type #1'], card['Skill Type #2'], card['Skill Type #3']].filter(Boolean);
+        return sts.some(st => values.includes(st));
       }
       case 'c':
         return values.includes(card['Club'] || '');
@@ -2679,19 +2715,31 @@ import {
     // Clear current deck
     deck = [];
     deckCardNums.clear();
+    deckBoosts = {};
 
     // Find matching cards — search allCards which always includes parallels
-    entries.forEach(({ cardNum, parallel }) => {
+    entries.forEach(({ cardNum, parallel, boostId }) => {
       const card = allCards.find(c => c['Card #'] === cardNum && c['Parallel'] === parallel);
       if (card && !deckCardNums.has(card['Card #'])) {
         deck.push(card);
         deckCardNums.add(card['Card #']);
+        // Restore boost only if known and eligible for this card.
+        if (boostId && BOOSTS[boostId] && isBoostEligible(BOOSTS[boostId], card)) {
+          deckBoosts[card['Card #']] = boostId;
+        }
       }
     });
 
     if (deck.length === 0) {
       showToast('No matching cards found.');
       return false;
+    }
+
+    // If the imported deck has boosts, turn on the boost system so they show.
+    if (Object.keys(deckBoosts).length > 0) {
+      boostsEnabled = true;
+      const cb = document.getElementById('enable-boosts');
+      if (cb) cb.checked = true;
     }
 
     if (deck.length < entries.length) {
@@ -2725,6 +2773,131 @@ import {
   // Add/remove cards, deck validation, deck panel rendering.
   // ============================================================
 
+  // ============================================================
+  // BOOSTS (effective card model)
+  // ============================================================
+
+  const clampStat = (v) => String(Math.max(0, Math.min(99, v)));
+
+  /**
+   * Return the effective card for a deck entry: base card with its applied
+   * boost's stat deltas + added skill type layered on. Never mutates the base
+   * card (returns a clone only when a boost applies). Card search / pool always
+   * use base cards, so they are unaffected.
+   */
+  function effectiveCard(card) {
+    if (!boostsEnabled) return card;
+    const boostId = deckBoosts[card['Card #']];
+    if (!boostId) return card;
+    const boost = BOOSTS[boostId];
+    if (!boost || !isBoostEligible(boost, card)) return card;
+
+    const eff = Object.assign({}, card);
+    const changed = {}; // which fields the boost changed (for green highlighting)
+    if (boost.delta) {
+      for (const stat of Object.keys(boost.delta)) {
+        eff[stat] = clampStat(Number(card[stat] || 0) + boost.delta[stat]);
+        changed[stat] = true;
+      }
+    }
+    if (boost.addSkillType) {
+      const existing = [card['Skill Type #1'], card['Skill Type #2']];
+      if (!existing.includes(boost.addSkillType)) {
+        eff['Skill Type #3'] = boost.addSkillType;
+        changed.skillType3 = true;
+      }
+    }
+    // Shotblocker boost: bump the "+N" in the GK's Shotblocking ability text.
+    if (boost.shotblock && (card['Ability 1 Title'] || '') === 'Shotblocking') {
+      eff['Ability 1 Text'] = boostShotblocking(card['Ability 1 Text'], boost.shotblock);
+      changed.shotblock = true;
+    }
+    eff._boostId = boostId;    // marker for row rendering
+    eff._boostChanged = changed; // which fields changed
+    return eff;
+  }
+
+  /** The deck as effective cards (boosts applied), aligned by index with `deck`. */
+  function effectiveDeck() {
+    return deck.map(effectiveCard);
+  }
+
+  /** Apply (boostId) or remove (null) a boost on a deck card by card number. */
+  function setBoost(cardNum, boostId) {
+    if (boostId) deckBoosts[cardNum] = boostId;
+    else delete deckBoosts[cardNum];
+    renderDeck();
+    saveSessionState();
+  }
+
+  /** Open the boost picker as a centered modal, boosts grouped by tier. */
+  function openBoostPicker(card) {
+    const existing = document.querySelector('.share-modal-overlay');
+    if (existing) existing.remove();
+
+    const cardNum = card['Card #'];
+    const current = deckBoosts[cardNum] || null;
+    const playerName = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim() || `Card ${cardNum}`;
+    const setName = card['Set'] || '';
+    const headerText = setName ? `${playerName} (${setName})` : playerName;
+
+    // Eligible boosts grouped by tier, preserving catalog order.
+    const eligible = eligibleBoosts(card);
+    const tiers = [
+      ['bronze', 'Bronze'],
+      ['silver', 'Silver'],
+      ['gold', 'Gold'],
+    ];
+
+    const overlay = document.createElement('div');
+    overlay.className = 'share-modal-overlay';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const modal = document.createElement('div');
+    modal.className = 'share-modal boost-modal';
+
+    const close = () => overlay.remove();
+
+    let sectionsHtml = '';
+    tiers.forEach(([tierKey, tierLabel]) => {
+      const ids = eligible.filter(id => BOOSTS[id].tier === tierKey);
+      if (ids.length === 0) return;
+      const opts = ids.map(id => {
+        const b = BOOSTS[id];
+        const sel = current === id ? ' selected' : '';
+        const badgeInner = (b.kind === 'skilltype' && b.addSkillType && SKILL_TYPE_ICONS[b.addSkillType])
+          ? `<img class="boost-chip-icon" src="${SKILL_TYPE_ICONS[b.addSkillType]}" alt="${escapeHtml(b.addSkillType)}">`
+          : escapeHtml(b.badge);
+        return `<button type="button" class="boost-option${sel}" data-boost="${id}">
+          <span class="boost-badge boost-tier-${b.tier} boost-kind-${b.kind}">${badgeInner}</span>
+          <span class="boost-opt-name">${escapeHtml(b.name)}</span>
+        </button>`;
+      }).join('');
+      sectionsHtml += `<div class="boost-tier-section">
+        <div class="boost-tier-title boost-tier-title-${tierKey}">${tierLabel}</div>
+        <div class="boost-tier-options">${opts}</div>
+      </div>`;
+    });
+
+    modal.innerHTML = `
+      <h3>${escapeHtml(headerText)}</h3>
+      <button type="button" class="boost-option boost-option-none${current ? '' : ' selected'}" data-boost="">No boost</button>
+      ${sectionsHtml}
+      <button class="share-close-btn boost-close-btn">Close</button>
+    `;
+
+    modal.querySelectorAll('.boost-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setBoost(cardNum, btn.dataset.boost || null);
+        close();
+      });
+    });
+    modal.querySelector('.boost-close-btn').addEventListener('click', close);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
   function addToDeck(card) {
     if (deck.length >= 20) return;
     if (deckCardNums.has(card['Card #'])) return;
@@ -2745,6 +2918,7 @@ import {
   function removeFromDeck(index) {
     const removed = deck.splice(index, 1)[0];
     deckCardNums.delete(removed['Card #']);
+    delete deckBoosts[removed['Card #']];
     hideDeckPreview();
     renderDeck();
     renderCards();
@@ -2754,6 +2928,7 @@ import {
   function clearDeck() {
     deck = [];
     deckCardNums.clear();
+    deckBoosts = {};
     loadedDeckId = null;
     loadedDeckName = '';
     updateSaveDeckBtn();
@@ -2778,8 +2953,9 @@ import {
     saveDeckBtn.disabled = deck.length !== 20 || !currentUser;
     deckListEl.innerHTML = '';
 
-    // Run deck validation
-    const { cardViolations, deckViolations } = validateDeck(deck, poolActive ? cardPool : null, activeRules);
+    // Run deck validation on EFFECTIVE cards (boosts applied), aligned by index.
+    const effDeck = effectiveDeck();
+    const { cardViolations, deckViolations } = validateDeck(effDeck, poolActive ? cardPool : null, activeRules);
 
     // Render deck-wide warnings
     const warningsEl = document.getElementById('deck-warnings');
@@ -2798,10 +2974,10 @@ import {
     const outfield = deck.filter(c => c['Position'] !== 'Goalkeeper')
       .sort((a, b) => Number(a['Energy'] || 0) - Number(b['Energy'] || 0));
 
-    // GK slot
+    // GK slot (render the effective card so boosted stats/skills show)
     if (gk) {
       const gkIdx = deck.indexOf(gk);
-      deckListEl.appendChild(buildDeckRow(gk, gkIdx, cardViolations.get(gkIdx)));
+      deckListEl.appendChild(buildDeckRow(effDeck[gkIdx], gkIdx, cardViolations.get(gkIdx)));
     } else {
       deckListEl.appendChild(buildEmptySlot('GK'));
     }
@@ -2811,10 +2987,10 @@ import {
     sep.className = 'deck-separator';
     deckListEl.appendChild(sep);
 
-    // Outfield slots (19)
+    // Outfield slots (19) — render effective cards
     outfield.forEach(card => {
       const idx = deck.indexOf(card);
-      deckListEl.appendChild(buildDeckRow(card, idx, cardViolations.get(idx)));
+      deckListEl.appendChild(buildDeckRow(effDeck[idx], idx, cardViolations.get(idx)));
     });
     const emptyOutfield = 19 - outfield.length;
     for (let i = 0; i < emptyOutfield; i++) {
@@ -2857,6 +3033,9 @@ import {
         row.style.backgroundPosition = 'center';
       }
 
+      // Which fields a boost changed (for green highlighting)
+      const changed = card._boostChanged || {};
+
       // Content wrapper (white layer over background)
       const contentWrapper = document.createElement('div');
       contentWrapper.className = 'deck-content';
@@ -2866,18 +3045,20 @@ import {
       leftCol.className = 'deck-left';
 
       const nrgEl = document.createElement('span');
-      nrgEl.className = 'deck-energy';
+      nrgEl.className = 'deck-energy' + (changed.Energy ? ' boost-changed' : '');
       nrgEl.innerHTML = `\u26A1${card['Energy'] || '0'}`;
       leftCol.appendChild(nrgEl);
 
       const stBox = document.createElement('span');
       stBox.className = 'deck-skill-types';
-      [card['Skill Type #1'], card['Skill Type #2']].forEach(st => {
+      [card['Skill Type #1'], card['Skill Type #2'], card['Skill Type #3']].forEach(st => {
         if (st) {
           const icon = document.createElement('img');
           icon.src = SKILL_TYPE_ICONS[st] || '';
           icon.alt = st;
           icon.className = 'deck-st-icon';
+          // Green ring on a boost-added skill type.
+          if (st === card['Skill Type #3'] && changed.skillType3) icon.classList.add('boost-added');
           stBox.appendChild(icon);
         }
       });
@@ -2905,12 +3086,58 @@ import {
 
       const statsEl = document.createElement('span');
       statsEl.className = 'deck-stats-compact';
-      statsEl.innerHTML = `<span class="ds-def">${card['Defence'] || '0'}</span><span class="ds-skl">${card['Skill'] || '0'}</span><span class="ds-atk">${card['Attack'] || '0'}</span>`;
+      const dc = changed.Defence ? ' boost-changed' : '';
+      const sc = changed.Skill ? ' boost-changed' : '';
+      const ac = changed.Attack ? ' boost-changed' : '';
+      statsEl.innerHTML = `<span class="ds-def${dc}">${card['Defence'] || '0'}</span><span class="ds-skl${sc}">${card['Skill'] || '0'}</span><span class="ds-atk${ac}">${card['Attack'] || '0'}</span>`;
+      // Goalkeepers: show shotblocking as a green +X badge after the stats.
+      const sb = getShotblocking(card);
+      if (sb != null) {
+        const sbEl = document.createElement('span');
+        sbEl.className = 'ds-shotblock' + (changed.shotblock ? ' boost-changed' : '');
+        sbEl.textContent = `+${sb}`;
+        sbEl.title = 'Shotblocking';
+        statsEl.appendChild(sbEl);
+      }
       bottomLine.appendChild(statsEl);
 
       rightCol.appendChild(bottomLine);
       contentWrapper.appendChild(rightCol);
       row.appendChild(contentWrapper);
+
+      // Boost chip: only shown when boosts are enabled. Shows the applied boost
+      // (or a + affordance) and opens the picker.
+      const cardNum = card['Card #'];
+      if (boostsEnabled) {
+      const currentBoostId = deckBoosts[cardNum] || null;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'deck-boost-chip' + (currentBoostId ? ' has-boost' : '');
+      if (currentBoostId && BOOSTS[currentBoostId]) {
+        const b = BOOSTS[currentBoostId];
+        // Border = tier (rarity), background = kind (type).
+        chip.classList.add(`boost-tier-${b.tier}`, `boost-kind-${b.kind}`);
+        chip.title = b.name;
+        if (b.kind === 'skilltype' && b.addSkillType && SKILL_TYPE_ICONS[b.addSkillType]) {
+          // Skill-type boost: show the skill-type icon, not text.
+          const icon = document.createElement('img');
+          icon.className = 'boost-chip-icon';
+          icon.src = SKILL_TYPE_ICONS[b.addSkillType];
+          icon.alt = b.addSkillType;
+          chip.appendChild(icon);
+        } else {
+          chip.textContent = b.badge; // +1/+2/+3 or -1/-2
+        }
+      } else {
+        chip.textContent = '\u2B06'; // ⬆ thick up arrow (boost icon)
+        chip.title = 'Add boost';
+      }
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation(); // don't remove the card
+        openBoostPicker(card);
+      });
+      contentWrapper.appendChild(chip);
+      }
 
       // Warning icon for violations
       if (violations && violations.length > 0) {
@@ -2969,6 +3196,9 @@ import {
   // ============================================================
 
   function renderDeckStats() {
+    // Use effective cards (boosts applied) for all stats. Shadows the module
+    // `deck` for this function only; renderDeckStats only reads the deck.
+    const deck = effectiveDeck();
 
     const CHART_TITLES = {
       'energy': 'Energy',
@@ -2992,12 +3222,22 @@ import {
 
       title.textContent = CHART_TITLES[chartType] || chartType;
 
+      // Bucket a numeric stat into counts[0..max]. The axis always spans at
+      // least 0..baseMax, but extends upward if a boosted card exceeds it, so
+      // out-of-range values never hit an undefined bucket (which would NaN the
+      // chart). Values are floored at 0.
+      const numericCounts = (column, baseMax) => {
+        const values = deck.map(c => Math.max(0, Number(c[column] || 0)));
+        const max = values.reduce((m, v) => Math.max(m, v), baseMax);
+        const counts = {};
+        for (let i = 0; i <= max; i++) counts[i] = 0;
+        values.forEach(v => { counts[v]++; });
+        return counts;
+      };
+
       switch (chartType) {
         case 'energy': {
-          const counts = {};
-          for (let i = 0; i <= 5; i++) counts[i] = 0;
-          deck.forEach(c => { counts[Number(c['Energy'] || 0)]++; });
-          renderBarChart(container, counts, '#b8860b');
+          renderBarChart(container, numericCounts('Energy', 5), '#b8860b');
           break;
         }
         case 'skill-type': {
@@ -3005,6 +3245,7 @@ import {
           deck.forEach(c => {
             if (c['Skill Type #1'] && counts[c['Skill Type #1']] != null) counts[c['Skill Type #1']]++;
             if (c['Skill Type #2'] && counts[c['Skill Type #2']] != null) counts[c['Skill Type #2']]++;
+            if (c['Skill Type #3'] && counts[c['Skill Type #3']] != null) counts[c['Skill Type #3']]++;
           });
           renderBarChart(container, counts, null, {
             Speed: '#e94560', Accuracy: '#40916c', Control: '#4a90d9', Strength: '#f0c040', Leadership: '#9b59b6'
@@ -3012,24 +3253,15 @@ import {
           break;
         }
         case 'skill-flip': {
-          const counts = {};
-          for (let i = 0; i <= 7; i++) counts[i] = 0;
-          deck.forEach(c => { counts[Number(c['Skill'] || 0)]++; });
-          renderBarChart(container, counts, '#d4a843');
+          renderBarChart(container, numericCounts('Skill', 7), '#f4c20d');
           break;
         }
         case 'attack': {
-          const counts = {};
-          for (let i = 0; i <= 10; i++) counts[i] = 0;
-          deck.forEach(c => { counts[Number(c['Attack'] || 0)]++; });
-          renderBarChart(container, counts, '#c0392b');
+          renderBarChart(container, numericCounts('Attack', 10), '#c0392b');
           break;
         }
         case 'defence': {
-          const counts = {};
-          for (let i = 0; i <= 10; i++) counts[i] = 0;
-          deck.forEach(c => { counts[Number(c['Defence'] || 0)]++; });
-          renderBarChart(container, counts, '#2a6db5');
+          renderBarChart(container, numericCounts('Defence', 10), '#2a6db5');
           break;
         }
         case 'position': {
