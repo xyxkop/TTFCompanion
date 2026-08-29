@@ -50,22 +50,58 @@ export const PHYSICAL_ORDER = Object.freeze([
 export const DIGITAL_WITH_BASE = Object.freeze([BASE, ...DIGITAL_ORDER]);
 
 // Printable parallels that current sets actually issue (standard numbering).
-// /60, /35 and /7 exist in PHYSICAL_ORDER but no current set issues them; if a
-// set ever does, that needs a signal in the set metadata.
+// /60, /35 and /7 exist in PHYSICAL_ORDER but the standard scheme omits them;
+// sets that issue /60 use the STANDARD_WITH_P60 scheme below.
 export const PHYSICAL_STANDARD = Object.freeze([
   Parallel.P99, Parallel.P75, Parallel.P50, Parallel.P25, Parallel.P10, Parallel.P5, Parallel.P1,
 ]);
 
 // ============================================================
+// PHYSICAL NUMBERING SCHEMES
+// A set's metadata names one of these schemes; it decides which /N tiers the
+// set prints. Add a new named scheme here when a set introduces a new mix.
+// Each list is kept in canonical PHYSICAL_ORDER.
+// ============================================================
+export const PHYSICAL_NUMBERING = Object.freeze({
+  STANDARD: PHYSICAL_STANDARD,
+  STANDARD_WITH_P60: Object.freeze([
+    Parallel.P99, Parallel.P75, Parallel.P60, Parallel.P50, Parallel.P25,
+    Parallel.P10, Parallel.P5, Parallel.P1,
+  ]),
+});
+
+export const DEFAULT_PHYSICAL_NUMBERING = 'STANDARD';
+
+// Union of every physical numbering scheme, in canonical PHYSICAL_ORDER. Used
+// for the collection tracker's physical column headers so any parallel a set
+// might issue (e.g. /60) has a column; per-card availability gates each cell.
+export const PHYSICAL_ALL = Object.freeze(
+  PHYSICAL_ORDER.filter(p => Object.values(PHYSICAL_NUMBERING).some(list => list.includes(p)))
+);
+
+/** Resolve a scheme name to its ordered parallel list (falls back to STANDARD). */
+export function physicalNumberingScheme(name) {
+  return PHYSICAL_NUMBERING[name] || PHYSICAL_STANDARD;
+}
+
+// ============================================================
 // SET-AWARE AVAILABILITY
 // Which parallels a card can have, based on its set config. `config` is the
 // set's metadata object (from setConfigs) or undefined; `cardNumber` is Card #.
+//
+// Model:
+//  - config.parallelType: 'STANDARD' (both), 'NO_DIGITAL' (physical-only),
+//    or 'NO_PHYSICAL' (digital-only).
+//  - config.partialParallelCards: a Set of card numbers. When non-empty, the
+//    set is PARTIAL and ONLY these cards get parallels (both digital and
+//    physical); every other card gets base only. Empty/null means full.
+//  - config.physicalNumbering: named scheme deciding which /N tiers print.
 // ============================================================
 
-/** True when a PARTIAL set does not list this card (so it only gets the base). */
+/** True when the set is partial and this card is not in its parallel list. */
 function partialExcludes(config, cardNumber) {
-  return config.parallelType === 'PARTIAL'
-    && !(config.partialParallelCards && config.partialParallelCards.has(cardNumber));
+  const cards = config.partialParallelCards;
+  return !!(cards && cards.size > 0 && !cards.has(cardNumber));
 }
 
 /** Digital parallels available to a card (includes Base). */
@@ -77,9 +113,11 @@ export function digitalParallelsFor(config, cardNumber) {
   return list;
 }
 
-/** Printable (physical) parallels available to a card (includes #/99). */
+/** Printable (physical) parallels available to a card (includes the base /99). */
 export function physicalParallelsFor(config, cardNumber) {
   if (!config) return [Parallel.P99];
-  if (partialExcludes(config, cardNumber)) return [Parallel.P99];
-  return PHYSICAL_STANDARD.slice();
+  if (config.parallelType === 'NO_PHYSICAL') return [];
+  const scheme = physicalNumberingScheme(config.physicalNumbering);
+  if (partialExcludes(config, cardNumber)) return [scheme[0]];
+  return scheme.slice();
 }

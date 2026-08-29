@@ -8,9 +8,11 @@ import { loadSetsConfig, setConfigs, getSetColor } from '../shared/sets.js';
 import { loadCards } from '../shared/data.js';
 import { currentUser, db, onAuthStateChange } from '../shared/firebase.js';
 
-  // Column lists per collection type (shared canonical sets).
+  // Column lists per collection type (shared canonical sets). Physical uses the
+  // union of all numbering schemes so parallels like /60 get a column; per-card
+  // availability gates which cells are ownable.
   const DIGITAL_PARALLELS = Parallels.DIGITAL_WITH_BASE;
-  const PHYSICAL_PARALLELS = Parallels.PHYSICAL_STANDARD;
+  const PHYSICAL_PARALLELS = Parallels.PHYSICAL_ALL;
 
   const MAX_COLLECTIONS = 3;
 

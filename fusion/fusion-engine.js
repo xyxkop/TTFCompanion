@@ -19,7 +19,8 @@ export const DIGITAL_PARALLEL_BONUS = {
 // Printable parallels have NO play styles (skill types excluded from matching).
 // P99 (#/99) is omitted: it is equivalent to Base (+0).
 export const PHYSICAL_PARALLEL_BONUS = {
-  [Parallel.P75]: 2, [Parallel.P50]: 3, [Parallel.P35]: 4, [Parallel.P25]: 4,
+  // P60 mirrors P50 (+3) for now.
+  [Parallel.P75]: 2, [Parallel.P60]: 3, [Parallel.P50]: 3, [Parallel.P35]: 4, [Parallel.P25]: 4,
   [Parallel.P10]: 5, [Parallel.P7]: 6, [Parallel.P5]: 6, [Parallel.P1]: 7,
 };
 

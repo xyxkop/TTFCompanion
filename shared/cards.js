@@ -1,7 +1,7 @@
 /**
  * TTF Companion - Card parallel generation & small render helpers (ES module).
  */
-import { Parallel } from './parallels.js';
+import { Parallel, digitalParallelsFor } from './parallels.js';
 import { setConfigs } from './sets.js';
 import { escapeHtml } from './util.js';
 
@@ -36,14 +36,11 @@ export function generateParallels(cards) {
 }
 
 export function shouldGenerateParallels(card) {
-  const setName = card['Set'];
-  const config = setConfigs[setName];
+  const config = setConfigs[card['Set']];
   if (!config) return false;
-  if (config.parallelType === 'NO_DIGITAL') return false;
-  if (config.parallelType === 'PARTIAL') {
-    return config.partialParallelCards && config.partialParallelCards.has(card['Card #']);
-  }
-  return true;
+  // Digital parallels exist when the card gets more than just the base
+  // (respects NO_DIGITAL availability and partial-set exclusions).
+  return digitalParallelsFor(config, card['Card #']).length > 1;
 }
 
 function makeParallel(card, parallelName, mods) {
