@@ -343,6 +343,9 @@ import { currentUser, db, onAuthStateChange } from '../shared/firebase.js';
       const owned = activeCollection.cards[cardNum] || [];
       const availableParallels = getAvailableParallels(card);
 
+      // Set has no presence in this collection medium: hide the card entirely.
+      if (availableParallels.length === 0) return;
+
       const row = document.createElement('div');
       row.className = 'card-row';
 
@@ -410,9 +413,19 @@ import { currentUser, db, onAuthStateChange } from '../shared/firebase.js';
     });
   }
 
-  /** Determine which parallels are available for a card based on set config */
+  /**
+   * Determine which parallels are available for a card in the active collection.
+   * A set with no presence in the current medium yields an empty list so the
+   * card is hidden entirely: physical-only sets (NO_DIGITAL) don't exist in a
+   * digital collection (not even Base), and digital-only sets (NO_PHYSICAL)
+   * don't exist in a physical collection.
+   */
   function getAvailableParallels(card) {
     const config = setConfigs[card['Set']];
+    if (config) {
+      if (activeCollection.type === 'digital' && config.parallelType === 'NO_DIGITAL') return [];
+      if (activeCollection.type !== 'digital' && config.parallelType === 'NO_PHYSICAL') return [];
+    }
     return activeCollection.type === 'digital'
       ? Parallels.digitalParallelsFor(config, card['Card #'])
       : Parallels.physicalParallelsFor(config, card['Card #']);

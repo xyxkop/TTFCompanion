@@ -72,11 +72,18 @@ export const PHYSICAL_NUMBERING = Object.freeze({
 
 export const DEFAULT_PHYSICAL_NUMBERING = 'STANDARD';
 
-// Union of every physical numbering scheme, in canonical PHYSICAL_ORDER. Used
-// for the collection tracker's physical column headers so any parallel a set
-// might issue (e.g. /60) has a column; per-card availability gates each cell.
+// Physical parallels that any set might issue, beyond the named schemes. These
+// are per-card add-ons (e.g. /35) that still need a collection-tracker column.
+const PHYSICAL_EXTRA = Object.freeze([Parallel.P35]);
+
+// Union of every physical numbering scheme plus per-card extras, in canonical
+// PHYSICAL_ORDER. Used for the collection tracker's physical column headers so
+// any parallel a set might issue (e.g. /60, /35) has a column; per-card
+// availability gates each cell.
 export const PHYSICAL_ALL = Object.freeze(
-  PHYSICAL_ORDER.filter(p => Object.values(PHYSICAL_NUMBERING).some(list => list.includes(p)))
+  PHYSICAL_ORDER.filter(p =>
+    Object.values(PHYSICAL_NUMBERING).some(list => list.includes(p)) || PHYSICAL_EXTRA.includes(p)
+  )
 );
 
 /** Resolve a scheme name to its ordered parallel list (falls back to STANDARD). */
@@ -118,6 +125,18 @@ export function physicalParallelsFor(config, cardNumber) {
   if (!config) return [Parallel.P99];
   if (config.parallelType === 'NO_PHYSICAL') return [];
   const scheme = physicalNumberingScheme(config.physicalNumbering);
-  if (partialExcludes(config, cardNumber)) return [scheme[0]];
-  return scheme.slice();
+  // /35 is a per-card add-on, independent of the numbering scheme AND of the
+  // partial-set exclusion: a listed card always has a /35 even if the set is
+  // partial and it's otherwise base-only.
+  const hasP35 = !!(config.p35Cards && config.p35Cards.has(cardNumber));
+  // Partial set: excluded cards get only the base /99 (plus /35 if listed).
+  if (partialExcludes(config, cardNumber)) {
+    return hasP35 ? [scheme[0], Parallel.P35] : [scheme[0]];
+  }
+  const list = scheme.slice();
+  if (hasP35 && !list.includes(Parallel.P35)) {
+    list.push(Parallel.P35);
+    list.sort((a, b) => PHYSICAL_ORDER.indexOf(a) - PHYSICAL_ORDER.indexOf(b));
+  }
+  return list;
 }

@@ -62,6 +62,11 @@ function parseSetsConfig(text) {
       omegaCard: entry['Omega Card']
         ? new Set(entry['Omega Card'].split(',').map(s => s.trim()).filter(Boolean))
         : null,
+      // Card numbers that additionally get a /35 physical parallel (per-card,
+      // independent of the set's numbering scheme).
+      p35Cards: entry['/35 Parallel Cards']
+        ? new Set(entry['/35 Parallel Cards'].split(',').map(s => s.trim()).filter(Boolean))
+        : null,
       // Playable defaults to true; only an explicit FALSE marks a set as
       // collectible-but-not-playable (excluded from the deck builder).
       playable: (entry['Playable'] || '').trim().toUpperCase() !== 'FALSE',
