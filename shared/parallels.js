@@ -111,11 +111,12 @@ function partialExcludes(config, cardNumber) {
   return !!(cards && cards.size > 0 && !cards.has(cardNumber));
 }
 
-/** Digital parallels available to a card (includes Base). */
+/** Digital parallels available to a card (includes Base unless the set has no base). */
 export function digitalParallelsFor(config, cardNumber) {
-  if (!config || config.parallelType === 'NO_DIGITAL') return [BASE];
-  if (partialExcludes(config, cardNumber)) return [BASE];
-  const list = [BASE, ...DIGITAL_ORDER.filter(p => p !== Parallel.OMEGA)];
+  if (!config || config.parallelType === 'NO_DIGITAL') return config && config.hasBase === false ? [] : [BASE];
+  const base = config.hasBase === false ? [] : [BASE];
+  if (partialExcludes(config, cardNumber)) return base;
+  const list = [...base, ...DIGITAL_ORDER.filter(p => p !== Parallel.OMEGA)];
   if (config.omegaCard && config.omegaCard.has(cardNumber)) list.push(Parallel.OMEGA);
   return list;
 }
@@ -124,14 +125,22 @@ export function digitalParallelsFor(config, cardNumber) {
 export function physicalParallelsFor(config, cardNumber) {
   if (!config) return [Parallel.P99];
   if (config.parallelType === 'NO_PHYSICAL') return [];
-  const scheme = physicalNumberingScheme(config.physicalNumbering);
+  const noBase = config.hasBase === false;
+  // The physical base is /99 (always the first tier of every scheme). Drop it
+  // when the set has no base cards, so it is printed only in numbered parallels.
+  const scheme = noBase
+    ? physicalNumberingScheme(config.physicalNumbering).filter(p => p !== Parallel.P99)
+    : physicalNumberingScheme(config.physicalNumbering);
   // /35 is a per-card add-on, independent of the numbering scheme AND of the
   // partial-set exclusion: a listed card always has a /35 even if the set is
   // partial and it's otherwise base-only.
   const hasP35 = !!(config.p35Cards && config.p35Cards.has(cardNumber));
-  // Partial set: excluded cards get only the base /99 (plus /35 if listed).
+  // Partial set: excluded cards only exist as the base /99 (none if no base),
+  // plus /35 if that card is listed.
   if (partialExcludes(config, cardNumber)) {
-    return hasP35 ? [scheme[0], Parallel.P35] : [scheme[0]];
+    const excl = noBase ? [] : [Parallel.P99];
+    if (hasP35) excl.push(Parallel.P35);
+    return excl;
   }
   const list = scheme.slice();
   if (hasP35 && !list.includes(Parallel.P35)) {

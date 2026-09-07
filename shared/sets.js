@@ -67,6 +67,9 @@ function parseSetsConfig(text) {
       p35Cards: entry['/35 Parallel Cards']
         ? new Set(entry['/35 Parallel Cards'].split(',').map(s => s.trim()).filter(Boolean))
         : null,
+      // Whether the set has base cards. Defaults to true; only an explicit
+      // FALSE marks a set as parallels-only (no digital Base, no physical /99).
+      hasBase: (entry['Has Base'] || '').trim().toUpperCase() !== 'FALSE',
       // Playable defaults to true; only an explicit FALSE marks a set as
       // collectible-but-not-playable (excluded from the deck builder).
       playable: (entry['Playable'] || '').trim().toUpperCase() !== 'FALSE',
