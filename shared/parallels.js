@@ -37,6 +37,17 @@ export const Parallel = Object.freeze({
 // The un-paralleled card. Not a parallel, but used in the digital "column" set.
 export const BASE = 'Base';
 
+// Sentinel for a per-card parallel list (omegaCard, p35Cards) that applies to
+// EVERY card in the set. Stored in place of a Set; use cardSetHas() to test.
+export const ALL_CARDS = Symbol('ALL_CARDS');
+
+/** Membership test for a per-card parallel set that may be null, a Set, or ALL_CARDS. */
+export function cardSetHas(cardSet, cardNumber) {
+  if (!cardSet) return false;
+  if (cardSet === ALL_CARDS) return true;
+  return cardSet.has(cardNumber);
+}
+
 // Display order (also the full supported list) for each parallel type.
 export const DIGITAL_ORDER = Object.freeze([
   Parallel.ALPHA, Parallel.P77, Parallel.P66, Parallel.P44, Parallel.P11, Parallel.OMEGA,
@@ -117,7 +128,7 @@ export function digitalParallelsFor(config, cardNumber) {
   const base = config.hasBase === false ? [] : [BASE];
   if (partialExcludes(config, cardNumber)) return base;
   const list = [...base, ...DIGITAL_ORDER.filter(p => p !== Parallel.OMEGA)];
-  if (config.omegaCard && config.omegaCard.has(cardNumber)) list.push(Parallel.OMEGA);
+  if (cardSetHas(config.omegaCard, cardNumber)) list.push(Parallel.OMEGA);
   return list;
 }
 
@@ -134,7 +145,7 @@ export function physicalParallelsFor(config, cardNumber) {
   // /35 is a per-card add-on, independent of the numbering scheme AND of the
   // partial-set exclusion: a listed card always has a /35 even if the set is
   // partial and it's otherwise base-only.
-  const hasP35 = !!(config.p35Cards && config.p35Cards.has(cardNumber));
+  const hasP35 = cardSetHas(config.p35Cards, cardNumber);
   // Partial set: excluded cards only exist as the base /99 (none if no base),
   // plus /35 if that card is listed.
   if (partialExcludes(config, cardNumber)) {

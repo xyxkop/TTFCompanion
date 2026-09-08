@@ -199,8 +199,18 @@ import {
       const [_, loadedCards] = await Promise.all([loadSetsConfig(), loadCards()]);
       // Exclude collectible-but-not-playable sets from the deck builder
       const baseCards = loadedCards.filter(c => isSetPlayable(c['Set']));
+      // Parallels are derived from every base row (the canonical stat source),
+      // including sets that have no base card of their own.
       const parallels = generateParallels(baseCards);
-      allCards = baseCards.concat(parallels);
+      // A set with Has Base = FALSE has no base card; its base row only seeds
+      // parallel generation, so drop it from the displayed/selectable cards.
+      const displayBase = baseCards.filter(c => {
+        const cfg = setConfigs[c['Set']];
+        return !cfg || cfg.hasBase !== false;
+      });
+      allCards = displayBase.concat(parallels);
+      // Filter dropdowns still use the full base list so no-base sets (which
+      // only appear as parallels) remain filterable by player/club/etc.
       populateFilterOptions(baseCards);
       buildFilterUI();
       buildParallelsSection();

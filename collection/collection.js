@@ -415,20 +415,25 @@ import { currentUser, db, onAuthStateChange } from '../shared/firebase.js';
 
   /**
    * Determine which parallels are available for a card in the active collection.
-   * A set with no presence in the current medium yields an empty list so the
-   * card is hidden entirely: physical-only sets (NO_DIGITAL) don't exist in a
-   * digital collection (not even Base), and digital-only sets (NO_PHYSICAL)
-   * don't exist in a physical collection.
+   * An empty list hides the card entirely (see renderCardRows).
+   *
+   * Digital collection reflects the digital game:
+   *  - A non-playable set has no digital presence at all (not shown).
+   *  - Otherwise the card has its digital Base (unless Has Base = FALSE) plus
+   *    any digital parallels. A playable NO_DIGITAL set still shows its Base
+   *    for gameplay; it just has no digital parallels.
+   *  - A set with neither Base nor digital parallels yields [] and is hidden.
+   *
+   * Physical collection is governed purely by physical availability (medium,
+   * base /99, numbering scheme, /35); playability is irrelevant to collecting.
    */
   function getAvailableParallels(card) {
     const config = setConfigs[card['Set']];
-    if (config) {
-      if (activeCollection.type === 'digital' && config.parallelType === 'NO_DIGITAL') return [];
-      if (activeCollection.type !== 'digital' && config.parallelType === 'NO_PHYSICAL') return [];
+    if (activeCollection.type === 'digital') {
+      if (config && config.playable === false) return [];
+      return Parallels.digitalParallelsFor(config, card['Card #']);
     }
-    return activeCollection.type === 'digital'
-      ? Parallels.digitalParallelsFor(config, card['Card #'])
-      : Parallels.physicalParallelsFor(config, card['Card #']);
+    return Parallels.physicalParallelsFor(config, card['Card #']);
   }
 
   // ============================================================

@@ -4,11 +4,23 @@
  */
 import { SETS_CSV_URL, resolveColor } from './config.js';
 import { parseCSVLines } from './csv.js';
-import { DEFAULT_PHYSICAL_NUMBERING } from './parallels.js';
+import { DEFAULT_PHYSICAL_NUMBERING, ALL_CARDS } from './parallels.js';
 
 // Loaded from the sets metadata sheet. Reassigned by parseSetsConfig();
 // importers get a live binding.
 export let setConfigs = {};
+
+/**
+ * Parse a per-card parallel column (Omega Card, /35 Parallel Cards) into a Set
+ * of card numbers. The literal "All" (case-insensitive) yields the ALL_CARDS
+ * sentinel (every card in the set); blank yields null (none).
+ */
+function parseCardSet(value) {
+  const raw = (value || '').trim();
+  if (!raw) return null;
+  if (raw.toLowerCase() === 'all') return ALL_CARDS;
+  return new Set(raw.split(',').map(s => s.trim()).filter(Boolean));
+}
 
 export async function loadSetsConfig() {
   try {
@@ -59,14 +71,12 @@ function parseSetsConfig(text) {
         : null,
       // Named physical numbering scheme (STANDARD, STANDARD_WITH_P60, ...).
       physicalNumbering: (entry['Physical Numbering'] || DEFAULT_PHYSICAL_NUMBERING).trim() || DEFAULT_PHYSICAL_NUMBERING,
-      omegaCard: entry['Omega Card']
-        ? new Set(entry['Omega Card'].split(',').map(s => s.trim()).filter(Boolean))
-        : null,
+      // Card numbers that get an Omega parallel. The literal "All" (case-
+      // insensitive) means every card in the set. Empty ⇒ none.
+      omegaCard: parseCardSet(entry['Omega Card']),
       // Card numbers that additionally get a /35 physical parallel (per-card,
-      // independent of the set's numbering scheme).
-      p35Cards: entry['/35 Parallel Cards']
-        ? new Set(entry['/35 Parallel Cards'].split(',').map(s => s.trim()).filter(Boolean))
-        : null,
+      // independent of the set's numbering scheme). "All" ⇒ every card.
+      p35Cards: parseCardSet(entry['/35 Parallel Cards']),
       // Whether the set has base cards. Defaults to true; only an explicit
       // FALSE marks a set as parallels-only (no digital Base, no physical /99).
       hasBase: (entry['Has Base'] || '').trim().toUpperCase() !== 'FALSE',

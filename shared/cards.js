@@ -1,7 +1,7 @@
 /**
  * TTF Companion - Card parallel generation & small render helpers (ES module).
  */
-import { Parallel, digitalParallelsFor } from './parallels.js';
+import { Parallel, digitalParallelsFor, cardSetHas } from './parallels.js';
 import { setConfigs } from './sets.js';
 import { escapeHtml } from './util.js';
 
@@ -27,8 +27,7 @@ export function generateParallels(cards) {
     if (card['Parallel'] !== 'Base') return;
     if (!shouldGenerateParallels(card)) return;
     const config = setConfigs[card['Set']];
-    if (!config || !config.omegaCard) return;
-    if (!config.omegaCard.has(card['Card #'])) return;
+    if (!config || !cardSetHas(config.omegaCard, card['Card #'])) return;
     parallels.push(makeParallel(card, Parallel.OMEGA, { Attack: 2, Defence: 2, Skill: 2, Energy: -1 }));
   });
 
